@@ -49,6 +49,9 @@ import { getCollectionRelationList } from './fields/get-collection-relation-list
 import { ItemsService } from './items.js';
 import { PayloadService } from './payload.js';
 import { RelationsService } from './relations.js';
+import { isVersionedCollection } from './versions/is-versioned-collection.js';
+import { toVersionField } from './versions/to-version-field.js';
+import { toVersionName } from './versions/to-version-name.js';
 
 const systemFieldRows = getSystemFieldRowsWithAuthProviders();
 const env = useEnv();
@@ -69,7 +72,6 @@ export class FieldsService {
 	knex: Knex;
 	helpers: Helpers;
 	accountability: Accountability | null;
-	itemsService: ItemsService;
 	payloadService: PayloadService;
 	schemaInspector: SchemaInspector;
 	schema: SchemaOverview;
@@ -82,7 +84,6 @@ export class FieldsService {
 		this.helpers = getHelpers(this.knex);
 		this.schemaInspector = options.knex ? createInspector(options.knex) : getSchemaInspector();
 		this.accountability = options.accountability || null;
-		this.itemsService = new ItemsService('directus_fields', options);
 		this.payloadService = new PayloadService('directus_fields', options);
 		this.schema = options.schema;
 
@@ -449,6 +450,29 @@ export class FieldsService {
 					);
 				}
 
+				/**
+				 * Versioning sync — mirror real (non-alias) fields to the version table.
+				 */
+				if (
+					isVersionedCollection(this.schema, collection) &&
+					hookAdjustedField.type &&
+					ALIAS_TYPES.includes(hookAdjustedField.type) === false
+				) {
+					const versionFieldsService = new FieldsService({ knex: trx, schema: this.schema });
+
+					await versionFieldsService.createField(
+						toVersionName(collection),
+						toVersionField(hookAdjustedField as any),
+						undefined,
+						{
+							autoPurgeCache: false,
+							autoPurgeSystemCache: false,
+							bypassEmitAction: (params) =>
+								opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+						},
+					);
+				}
+
 				const actionEvent = {
 					event: 'fields.create',
 					meta: {
@@ -545,89 +569,127 @@ export class FieldsService {
 				throw new InvalidPayloadError({ reason: 'Alias type cannot be changed' });
 			}
 
-			if (hookAdjustedField.schema) {
-				const existingColumn = await this.columnInfo(collection, hookAdjustedField.field);
+			const attemptConcurrentIndex = Boolean(opts?.attemptConcurrentIndex);
+			let existingColumn: Column | undefined;
 
-				if (existingColumn.is_primary_key) {
-					if (hookAdjustedField.schema?.is_nullable === true) {
-						throw new InvalidPayloadError({ reason: 'Primary key cannot be null' });
+			await transaction(this.knex, async (trx) => {
+				const itemsService = new ItemsService('directus_fields', {
+					knex: trx,
+					accountability: this.accountability,
+					schema: this.schema,
+				});
+
+				if (hookAdjustedField.schema) {
+					existingColumn = await this.columnInfo(collection, hookAdjustedField.field);
+
+					if (existingColumn.is_primary_key) {
+						if (hookAdjustedField.schema?.is_nullable === true) {
+							throw new InvalidPayloadError({ reason: 'Primary key cannot be null' });
+						}
 					}
-				}
 
-				// Sanitize column only when applying snapshot diff as opts is only passed from /utils/apply-diff.ts
-				const columnToCompare =
-					opts?.bypassLimits && opts.autoPurgeSystemCache === false ? sanitizeColumn(existingColumn) : existingColumn;
+					// Sanitize column only when applying snapshot diff as opts is only passed from /utils/apply-diff.ts
+					const columnToCompare =
+						opts?.bypassLimits && opts.autoPurgeSystemCache === false ? sanitizeColumn(existingColumn) : existingColumn;
 
-				if (!isEqual(columnToCompare, hookAdjustedField.schema)) {
-					try {
-						const attemptConcurrentIndex = Boolean(opts?.attemptConcurrentIndex);
-
-						await transaction(this.knex, async (trx) => {
+					if (!isEqual(columnToCompare, hookAdjustedField.schema)) {
+						try {
 							await trx.schema.alterTable(collection, (table) => {
 								if (!hookAdjustedField.schema) return;
 
 								this.addColumnToTable(table, collection, field, {
-									existing: existingColumn,
+									existing: existingColumn!,
 									attemptConcurrentIndex,
 								});
 							});
-						});
-
-						// concurrent index creation cannot be done inside the transaction
-						if (attemptConcurrentIndex) {
-							await this.addColumnIndex(collection, field, {
-								existing: existingColumn,
-								attemptConcurrentIndex,
-							});
+						} catch (err: any) {
+							throw await translateDatabaseError(err, field);
 						}
-					} catch (err: any) {
-						throw await translateDatabaseError(err, field);
 					}
 				}
-			}
 
-			// Only create/update a database record if this is not a system field
-			if (hookAdjustedField.meta && !isSystemField(collection, hookAdjustedField.field)) {
-				if (record) {
-					await this.itemsService.updateOne(
-						record.id,
-						{
-							...hookAdjustedField.meta,
-							collection: collection,
-							field: hookAdjustedField.field,
-						},
-						{ emitEvents: false },
-					);
-				} else {
-					await this.itemsService.createOne(
-						{
-							...hookAdjustedField.meta,
-							collection: collection,
-							field: hookAdjustedField.field,
-						},
-						{ emitEvents: false },
-					);
+				// Only create/update a database record if this is not a system field
+				if (hookAdjustedField.meta && !isSystemField(collection, hookAdjustedField.field)) {
+					if (record) {
+						await itemsService.updateOne(
+							record.id,
+							{
+								...hookAdjustedField.meta,
+								collection: collection,
+								field: hookAdjustedField.field,
+							},
+							{ emitEvents: false },
+						);
+					} else {
+						await itemsService.createOne(
+							{
+								...hookAdjustedField.meta,
+								collection: collection,
+								field: hookAdjustedField.field,
+							},
+							{ emitEvents: false },
+						);
+					}
 				}
-			}
 
-			const actionEvent = {
-				event: 'fields.update',
-				meta: {
-					payload: hookAdjustedField,
-					keys: [hookAdjustedField.field],
-					collection: collection,
-				},
-				context: {
-					database: getDatabase(),
-					schema: this.schema,
-					accountability: this.accountability,
-				},
-			};
+				/**
+				 * Versioning sync — update field on version table if it exists
+				 */
+				if (isVersionedCollection(this.schema, collection)) {
+					const versionCollection = toVersionName(collection);
+					const versionFieldName = toVersionName(field.field);
 
-			if (opts?.bypassEmitAction) {
-				opts.bypassEmitAction(actionEvent);
-			} else {
-				nestedActionEvents.push(actionEvent);
+					const versionFieldsService = new FieldsService({ knex: trx, schema: this.schema });
+
+					const versionOpts: FieldMutationOptions = {
+						autoPurgeCache: false,
+						autoPurgeSystemCache: false,
+						bypassEmitAction: (params) =>
+							opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+					};
+
+					// Update base field on version table
+					if (this.schema.collections[versionCollection]?.fields[field.field]) {
+						await versionFieldsService.updateField(versionCollection, toVersionField(field) as any, versionOpts);
+					}
+
+					// Update reference field (directus_versions_* prefixed) if it exists
+					if (this.schema.collections[versionCollection]?.fields[versionFieldName]) {
+						await versionFieldsService.updateField(
+							versionCollection,
+							toVersionField(field, { reference: true }) as any,
+							versionOpts,
+						);
+					}
+				}
+
+				const actionEvent = {
+					event: 'fields.update',
+					meta: {
+						payload: hookAdjustedField,
+						keys: [hookAdjustedField.field],
+						collection: collection,
+					},
+					context: {
+						database: getDatabase(),
+						schema: this.schema,
+						accountability: this.accountability,
+					},
+				};
+
+				if (opts?.bypassEmitAction) {
+					opts.bypassEmitAction(actionEvent);
+				} else {
+					nestedActionEvents.push(actionEvent);
+				}
+			});
+
+			// concurrent index creation cannot be done inside the transaction
+			if (attemptConcurrentIndex && existingColumn) {
+				await this.addColumnIndex(collection, field, {
+					existing: existingColumn,
+					attemptConcurrentIndex,
+				});
 			}
 
 			return field.field;
@@ -856,6 +918,33 @@ export class FieldsService {
 						await trx('directus_permissions')
 							.update('fields', newFields.length > 0 ? newFields : null)
 							.where('id', '=', permissionRow['id']);
+					}
+				}
+
+				/**
+				 * Versioning sync — delete field and reference field on version table
+				 */
+				if (isVersionedCollection(this.schema, collection)) {
+					const versionCollection = toVersionName(collection);
+					const versionFieldName = toVersionName(field);
+
+					const versionFieldsService = new FieldsService({ knex: trx, schema: this.schema });
+
+					const versionOpts: MutationOptions = {
+						autoPurgeCache: false,
+						autoPurgeSystemCache: false,
+						bypassEmitAction: (params) =>
+							opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+					};
+
+					// Delete base field on version table
+					if (this.schema.collections[versionCollection]?.fields[field]) {
+						await versionFieldsService.deleteField(versionCollection, field, versionOpts);
+					}
+
+					// Delete reference field (directus_versions_* prefixed) if it exists
+					if (this.schema.collections[versionCollection]?.fields[versionFieldName]) {
+						await versionFieldsService.deleteField(versionCollection, versionFieldName, versionOpts);
 					}
 				}
 			});
