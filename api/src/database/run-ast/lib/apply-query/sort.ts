@@ -1,8 +1,10 @@
 import type { Aggregate, Relation, SchemaOverview } from '@directus/types';
 import { getRelationInfo } from '@directus/utils';
 import type { Knex } from 'knex';
+import { parseJsonFunction } from '../../../../database/helpers/fn/json/parse-function.js';
 import type { AliasMap } from '../../../../utils/get-column-path.js';
 import { getColumnPath } from '../../../../utils/get-column-path.js';
+import { splitFieldPath } from '../../../../utils/split-field-path.js';
 import { getColumn } from '../../utils/get-column.js';
 import { addJoin } from './add-join.js';
 
@@ -17,13 +19,15 @@ export function applySort(
 	collection: string,
 	aliasMap: AliasMap,
 	returnRecords = false,
+	userAlias?: Record<string, string>,
+	jsonAliasMap?: Record<string, string>,
 ) {
 	const relations: Relation[] = schema.relations;
 	let hasJoins = false;
 	let hasMultiRelationalSort = false;
 
 	const sortRecords = sort.map((sortField) => {
-		const column: string[] = sortField.split('.');
+		const column: string[] = splitFieldPath(sortField);
 		let order: 'asc' | 'desc' = 'asc';
 
 		if (sortField.startsWith('-')) {
@@ -66,13 +70,38 @@ export function applySort(
 		}
 
 		if (column.length === 1) {
-			const pathRoot = column[0]!.split(':')[0]!;
+			const rawField = column[0]!;
+			// Resolve user-defined alias before processing
+			const resolvedField = userAlias?.[rawField] ?? rawField;
+
+			// Direct json() call or alias that resolves to json()
+			if (resolvedField.startsWith('json(')) {
+				// Validate the function parses correctly (throws on invalid syntax)
+				parseJsonFunction(resolvedField);
+
+				return {
+					order,
+					column: returnRecords ? resolvedField : (getColumn(knex, collection, resolvedField, false, schema) as any),
+				};
+			}
+
+			// Sort by auto-generated json alias (e.g., metadata_color_json)
+			const jsonFnName = jsonAliasMap?.[rawField];
+
+			if (jsonFnName) {
+				return {
+					order,
+					column: returnRecords ? jsonFnName : (getColumn(knex, collection, jsonFnName, false, schema) as any),
+				};
+			}
+
+			const pathRoot = resolvedField.split(':')[0]!;
 			const { relation, relationType } = getRelationInfo(relations, collection, pathRoot);
 
 			if (!relation || ['m2o', 'a2o'].includes(relationType ?? '')) {
 				return {
 					order,
-					column: returnRecords ? column[0] : (getColumn(knex, collection, column[0]!, false, schema) as any),
+					column: returnRecords ? resolvedField : (getColumn(knex, collection, resolvedField, false, schema) as any),
 				};
 			}
 		}
@@ -86,7 +115,7 @@ export function applySort(
 			knex,
 		});
 
-		const { columnPath } = getColumnPath({
+		const { columnPath, targetCollection } = getColumnPath({
 			path: column,
 			collection,
 			aliasMap,
@@ -94,7 +123,9 @@ export function applySort(
 			schema,
 		});
 
-		const [alias, field] = columnPath.split('.');
+		const parts = splitFieldPath(columnPath);
+		const [alias, ...rest] = parts;
+		const field = rest.join('.');
 
 		if (!hasJoins) {
 			hasJoins = isJoinAdded;
@@ -106,7 +137,9 @@ export function applySort(
 
 		return {
 			order,
-			column: returnRecords ? columnPath : (getColumn(knex, alias!, field!, false, schema) as any),
+			column: returnRecords
+				? columnPath
+				: (getColumn(knex, alias!, field, false, schema, { originalCollectionName: targetCollection }) as any),
 		};
 	});
 

@@ -151,3 +151,46 @@ describe('alias relational depth', async () => {
 		).toThrow('Max relational depth exceeded');
 	});
 });
+
+describe('sort relational depth', async () => {
+	vi.mocked(useEnv).mockReturnValue({ MAX_RELATIONAL_DEPTH: 2 });
+	const { validateQuery } = await import('./validate-query.js');
+
+	test('dotted json path in sort does not inflate relational depth', () => {
+		// json(metadata, path.with.dots) has relational depth 1 — dots inside json path are not relational segments
+		expect(() =>
+			validateQuery({
+				sort: ['json(metadata, path.with.dots)'],
+			}),
+		).not.toThrow();
+	});
+
+	test('sort field exceeding max relational depth throws', () => {
+		// a.b.c has relational depth 3 > 2
+		expect(() =>
+			validateQuery({
+				sort: ['a.b.c'],
+			}),
+		).toThrow('Max relational depth exceeded');
+	});
+
+	test('sort resolves through alias before checking depth', () => {
+		// alias key has depth 1, resolved value has depth 3 → should throw
+		expect(() =>
+			validateQuery({
+				sort: ['mySort'],
+				alias: { mySort: 'json(a.b.field, path)' },
+			}),
+		).toThrow('Max relational depth exceeded');
+	});
+
+	test('sort with leading dash strips prefix before alias lookup', () => {
+		// -mySort resolves via alias to depth 1 → should not throw
+		expect(() =>
+			validateQuery({
+				sort: ['-mySort'],
+				alias: { mySort: 'json(metadata, color)' },
+			}),
+		).not.toThrow();
+	});
+});

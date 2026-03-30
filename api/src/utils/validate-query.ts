@@ -246,7 +246,10 @@ function validateRelationalDepth(query: Query) {
 
 	if (query.sort) {
 		for (const sort of query.sort) {
-			if (sort.split('.').length > maxRelationalDepth) {
+			const field = sort.startsWith('-') ? sort.slice(1) : sort;
+			const resolved = query.alias?.[field] ?? field;
+
+			if (getFieldRelationalDepth(resolved) > maxRelationalDepth) {
 				throw new InvalidQueryError({ reason: 'Max relational depth exceeded' });
 			}
 		}

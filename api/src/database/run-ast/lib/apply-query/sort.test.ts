@@ -14,6 +14,19 @@ const schema = new SchemaBuilder()
 	})
 	.build();
 
+const schemaWithJson = new SchemaBuilder()
+	.collection('articles', (c) => {
+		c.field('id').id();
+		c.field('title').string();
+		c.field('metadata').json();
+		c.field('category_id').m2o('categories');
+	})
+	.collection('categories', (c) => {
+		c.field('id').id();
+		c.field('metadata').json();
+	})
+	.build();
+
 test('no sorting', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
@@ -186,4 +199,114 @@ test('sorting of count(links) with aggregation', async () => {
 	);
 
 	expect(rawQuery.bindings).toEqual([]);
+});
+
+test('sort by json() function asc', async () => {
+	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
+	const queryBuilder = db.queryBuilder();
+
+	applySort(db, schemaWithJson, queryBuilder, ['json(metadata, color)'], null, 'articles', {});
+
+	const tracker = createTracker(db);
+	tracker.on.select('*').response([]);
+
+	await queryBuilder;
+
+	const rawQuery = tracker.history.all[0]!;
+
+	expect(rawQuery.sql).toEqual(`select * order by json_extract("articles"."metadata", ?) asc`);
+	expect(rawQuery.bindings).toEqual(['$.color']);
+});
+
+test('sort by json() function desc', async () => {
+	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
+	const queryBuilder = db.queryBuilder();
+
+	applySort(db, schemaWithJson, queryBuilder, ['-json(metadata, color)'], null, 'articles', {});
+
+	const tracker = createTracker(db);
+	tracker.on.select('*').response([]);
+
+	await queryBuilder;
+
+	const rawQuery = tracker.history.all[0]!;
+
+	expect(rawQuery.sql).toEqual(`select * order by json_extract("articles"."metadata", ?) desc`);
+	expect(rawQuery.bindings).toEqual(['$.color']);
+});
+
+test('sort by json() with dotted path does not break tokenisation', async () => {
+	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
+	const queryBuilder = db.queryBuilder();
+
+	applySort(db, schemaWithJson, queryBuilder, ['json(metadata, settings.theme)'], null, 'articles', {});
+
+	const tracker = createTracker(db);
+	tracker.on.select('*').response([]);
+
+	await queryBuilder;
+
+	const rawQuery = tracker.history.all[0]!;
+
+	expect(rawQuery.sql).toEqual(`select * order by json_extract("articles"."metadata", ?) asc`);
+	expect(rawQuery.bindings).toEqual(['$.settings.theme']);
+});
+
+test('sort by alias resolving to json()', async () => {
+	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
+	const queryBuilder = db.queryBuilder();
+
+	applySort(db, schemaWithJson, queryBuilder, ['myColor'], null, 'articles', {}, false, {
+		myColor: 'json(metadata, color)',
+	});
+
+	const tracker = createTracker(db);
+	tracker.on.select('*').response([]);
+
+	await queryBuilder;
+
+	const rawQuery = tracker.history.all[0]!;
+
+	expect(rawQuery.sql).toEqual(`select * order by json_extract("articles"."metadata", ?) asc`);
+	expect(rawQuery.bindings).toEqual(['$.color']);
+});
+
+test('sort by auto-generated json alias regenerates extraction expression', async () => {
+	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
+	const queryBuilder = db.queryBuilder();
+
+	applySort(db, schemaWithJson, queryBuilder, ['metadata_color_json'], null, 'articles', {}, false, undefined, {
+		metadata_color_json: 'json(metadata, color)',
+	});
+
+	const tracker = createTracker(db);
+	tracker.on.select('*').response([]);
+
+	await queryBuilder;
+
+	const rawQuery = tracker.history.all[0]!;
+
+	expect(rawQuery.sql).toEqual(`select * order by json_extract("articles"."metadata", ?) asc`);
+	expect(rawQuery.bindings).toEqual(['$.color']);
+});
+
+test('relational sort with json() generates JOIN and extraction expression', async () => {
+	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
+	const queryBuilder = db.queryBuilder();
+
+	applySort(db, schemaWithJson, queryBuilder, ['category_id.json(metadata, color)'], null, 'articles', {});
+
+	const tracker = createTracker(db);
+	tracker.on.select('*').response([]);
+
+	await queryBuilder;
+
+	const rawQuery = tracker.history.all[0]!;
+
+	// Should JOIN categories and sort by json_extract on the joined alias
+	expect(rawQuery.sql).toContain('left join "categories"');
+	expect(rawQuery.sql).toContain('json_extract(');
+	expect(rawQuery.sql).toContain('"metadata"');
+	expect(rawQuery.sql).toContain('asc');
+	expect(rawQuery.bindings).toEqual(['$.color']);
 });

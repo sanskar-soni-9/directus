@@ -6,8 +6,10 @@ import type { Context } from '../../../permissions/types.js';
 import type { FieldNode, FunctionFieldNode, O2MNode } from '../../../types/ast.js';
 import { getCollectionFromAlias } from '../../../utils/get-collection-from-alias.js';
 import type { AliasMap } from '../../../utils/get-column-path.js';
+import { splitFieldPath } from '../../../utils/split-field-path.js';
 import { getHelpers } from '../../helpers/index.js';
 import { applyCaseWhen } from '../utils/apply-case-when.js';
+import { applyFunctionToColumnName } from '../utils/apply-function-to-column-name.js';
 import { generateQueryAlias } from '../utils/generate-alias.js';
 import { getColumnPreprocessor } from '../utils/get-column-pre-processor.js';
 import { getColumn } from '../utils/get-column.js';
@@ -95,7 +97,26 @@ export function getDBQuery(
 	let hasMultiRelationalSort: boolean | undefined;
 
 	if (queryCopy.sort) {
-		const sortResult = applySort(knex, schema, dbQuery, queryCopy.sort, queryCopy.aggregate, table, aliasMap, true);
+		const jsonAliasMap: Record<string, string> = {};
+
+		for (const node of fieldNodes) {
+			if (node.type === 'functionField' && node.name.startsWith('json(')) {
+				jsonAliasMap[applyFunctionToColumnName(node.fieldKey)] = node.name;
+			}
+		}
+
+		const sortResult = applySort(
+			knex,
+			schema,
+			dbQuery,
+			queryCopy.sort,
+			queryCopy.aggregate,
+			table,
+			aliasMap,
+			true,
+			queryCopy.alias ?? undefined,
+			jsonAliasMap,
+		);
 
 		if (sortResult) {
 			sortRecords = sortResult.sortRecords;
@@ -162,13 +183,16 @@ export function getDBQuery(
 
 				let orderByColumn: Knex.Raw;
 
-				if (sortRecord.column.includes('.')) {
-					const [alias, field] = sortRecord.column.split('.');
+				const colParts = splitFieldPath(sortRecord.column);
+
+				if (colParts.length > 1) {
+					const [alias, ...rest] = colParts;
+					const field = rest.join('.');
 					const originalCollectionName = getCollectionFromAlias(alias!, aliasMap);
-					dbQuery.select(getColumn(knex, alias!, field!, sortAlias, schema, { originalCollectionName }));
+					dbQuery.select(getColumn(knex, alias!, field, sortAlias, schema, { originalCollectionName }));
 
 					orderByString += `?? ${sortRecord.order}`;
-					orderByColumn = getColumn(knex, alias!, field!, false, schema, { originalCollectionName });
+					orderByColumn = getColumn(knex, alias!, field, false, schema, { originalCollectionName });
 				} else {
 					dbQuery.select(getColumn(knex, table, sortRecord.column, sortAlias, schema));
 
@@ -199,10 +223,13 @@ export function getDBQuery(
 			dbQuery.orderByRaw(orderByString, orderByFields);
 		} else {
 			sortRecords.map((sortRecord) => {
-				if (sortRecord.column.includes('.')) {
-					const [alias, field] = sortRecord.column.split('.');
+				const colParts = splitFieldPath(sortRecord.column);
 
-					sortRecord.column = getColumn(knex, alias!, field!, false, schema, {
+				if (colParts.length > 1) {
+					const [alias, ...rest] = colParts;
+					const field = rest.join('.');
+
+					sortRecord.column = getColumn(knex, alias!, field, false, schema, {
 						originalCollectionName: getCollectionFromAlias(alias!, aliasMap),
 					}) as any;
 				} else {
