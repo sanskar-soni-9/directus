@@ -84,3 +84,70 @@ describe('validateGeometry', async () => {
 		expect(() => validateGeometry(value, 'test')).toThrowError('"test" has to be a valid GeoJSON object');
 	});
 });
+
+describe('alias validation', async () => {
+	const { validateQuery } = await import('./validate-query.js');
+
+	test('accepts plain field alias', () => {
+		expect(() => validateQuery({ alias: { myAlias: 'some_field' } })).not.toThrow();
+	});
+
+	test('accepts valid json() function in alias value', () => {
+		expect(() => validateQuery({ alias: { myAlias: 'json(metadata, color)' } })).not.toThrow();
+	});
+
+	test('accepts json() with dot path in alias value', () => {
+		expect(() => validateQuery({ alias: { myAlias: 'json(metadata, settings.theme)' } })).not.toThrow();
+	});
+
+	test('accepts json() with relational path in alias value', () => {
+		expect(() => validateQuery({ alias: { myAlias: 'json(category_id.metadata, color)' } })).not.toThrow();
+	});
+
+	test('rejects alias value with dot (non-json)', () => {
+		expect(() => validateQuery({ alias: { myAlias: 'relation.field' } })).toThrow(
+			`"alias" value can't contain a period`,
+		);
+	});
+
+	test('rejects alias key with dot', () => {
+		expect(() => validateQuery({ alias: { 'my.alias': 'field' } })).toThrow(`"alias" key can't contain a period`);
+	});
+
+	test('rejects malformed json() syntax in alias value — missing comma', () => {
+		expect(() => validateQuery({ alias: { myAlias: 'json(metadata)' } })).toThrow('Invalid json() syntax');
+	});
+
+	test('rejects malformed json() syntax in alias value — missing field', () => {
+		expect(() => validateQuery({ alias: { myAlias: 'json(, color)' } })).toThrow('Invalid json() syntax');
+	});
+
+	test('rejects malformed json() syntax in alias value — missing path', () => {
+		expect(() => validateQuery({ alias: { myAlias: 'json(metadata,)' } })).toThrow('Invalid json() syntax');
+	});
+});
+
+describe('alias relational depth', async () => {
+	vi.mocked(useEnv).mockReturnValue({ MAX_RELATIONAL_DEPTH: 2 });
+	const { validateQuery } = await import('./validate-query.js');
+
+	test('checks depth against resolved alias value, not key', () => {
+		// alias key "myAlias" has depth 1, but the value resolves to depth 2 (category_id + metadata)
+		expect(() =>
+			validateQuery({
+				fields: ['myAlias'],
+				alias: { myAlias: 'json(category_id.metadata, color)' },
+			}),
+		).not.toThrow();
+	});
+
+	test('rejects alias that resolves beyond max relational depth', () => {
+		// depth 3: a.b.c
+		expect(() =>
+			validateQuery({
+				fields: ['myAlias'],
+				alias: { myAlias: 'json(a.b.field, path)' },
+			}),
+		).toThrow('Max relational depth exceeded');
+	});
+});

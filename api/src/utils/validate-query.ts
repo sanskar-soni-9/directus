@@ -4,6 +4,7 @@ import type { Filter, Query } from '@directus/types';
 import Joi from 'joi';
 import { isPlainObject, uniq } from 'lodash-es';
 import { stringify } from 'wellknown';
+import { parseJsonFunction } from '../database/helpers/fn/json/parse-function.js';
 import { calculateFieldDepth } from './calculate-field-depth.js';
 import { getFieldRelationalDepth } from './get-field-relational-depth.js';
 
@@ -186,9 +187,11 @@ function validateAlias(alias: any) {
 			throw new InvalidQueryError({ reason: `"alias" key can't contain a period character \`.\`` });
 		}
 
-		const isJsonFunction = value.trim().startsWith('json(') && value.endsWith(')');
+		const isJsonFunction = value.trim().startsWith('json(') && value.trim().endsWith(')');
 
-		if (!isJsonFunction && value.includes('.')) {
+		if (isJsonFunction) {
+			parseJsonFunction(value.trim()); // throws InvalidQueryError on invalid json() syntax
+		} else if (value.includes('.')) {
 			throw new InvalidQueryError({ reason: `"alias" value can't contain a period character \`.\`` });
 		}
 	}
@@ -223,7 +226,12 @@ function validateRelationalDepth(query: Query) {
 	fields = uniq(fields);
 
 	for (const field of fields) {
-		if (getFieldRelationalDepth(field) > maxRelationalDepth) {
+		// Resolve user-defined aliases before measuring depth so that
+		// alias={"myAlias":"json(category_id.metadata, color)"} is checked
+		// against the actual relational path, not just the alias key.
+		const resolved = query.alias?.[field] ?? field;
+
+		if (getFieldRelationalDepth(resolved) > maxRelationalDepth) {
 			throw new InvalidQueryError({ reason: 'Max relational depth exceeded' });
 		}
 	}
