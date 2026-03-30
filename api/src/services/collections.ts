@@ -17,7 +17,7 @@ import type {
 import { addFieldFlag } from '@directus/utils';
 import type Keyv from 'keyv';
 import type { Knex } from 'knex';
-import { chunk, groupBy, merge, omit } from 'lodash-es';
+import { chunk, cloneDeep, groupBy, merge, omit } from 'lodash-es';
 import { clearSystemCache, getCache } from '../cache.js';
 import { ALIAS_TYPES } from '../constants.js';
 import type { Helpers } from '../database/helpers/index.js';
@@ -35,8 +35,12 @@ import { getCollectionMetaUpdates } from './fields/get-collection-meta-updates.j
 import { getCollectionRelationList } from './fields/get-collection-relation-list.js';
 import { FieldsService } from './fields.js';
 import { ItemsService } from './items.js';
+import { RelationsService } from './relations.js';
+import { isVersionedCollection } from './versions/is-versioned-collection.js';
 import { toVersionCollection } from './versions/to-version-collection.js';
+import { toVersionField } from './versions/to-version-field.js';
 import { toVersionName } from './versions/to-version-name.js';
+import { toVersionRelation } from './versions/to-version-relation.js';
 
 export class CollectionsService {
 	knex: Knex;
@@ -531,6 +535,100 @@ export class CollectionsService {
 							bypassEmitAction: (params) =>
 								opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
 						});
+
+						// sync existing relations to version tables
+						const refreshedSchema = await getSchema({ bypassCache: true, database: trx });
+
+						const versionRelationsService = new RelationsService({
+							knex: trx,
+							schema: refreshedSchema,
+						});
+
+						const versionOpts: MutationOptions = {
+							autoPurgeSystemCache: false,
+							bypassEmitAction: (params) =>
+								opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+						};
+
+						for (const relation of this.schema.relations) {
+							// skip if no m2o on this collection or o2m pointing here
+							if (relation.collection !== collectionKey && relation.meta?.one_collection !== collectionKey) continue;
+
+							// build version payload and create through normal flow
+							const fkRelation = cloneDeep(relation);
+
+							if (fkRelation.meta?.one_field) fkRelation.meta.one_field = null;
+
+							// base version relation — only if FK table has a version counterpart
+							// and version relation doesn't already exist (may have been created by earlier sync)
+							const versionRelationCollection = toVersionName(relation.collection);
+
+							const versionRelationExists = refreshedSchema.relations.some(
+								(r) => r.collection === versionRelationCollection && r.field === relation.field,
+							);
+
+							if (
+								!versionRelationExists &&
+								isVersionedCollection(refreshedSchema, relation.collection) &&
+								this.schema.collections[relation.collection]?.fields[relation.field]
+							) {
+								// If an m2a add only collections that are versioned
+								const versionedCollections = [];
+								const oneCollections = fkRelation.meta?.one_allowed_collections;
+
+								if (oneCollections && oneCollections.length > 0) {
+									for (const oneCollection of oneCollections) {
+										if (this.schema.collections[oneCollection]) {
+											versionedCollections.push(oneCollection);
+										}
+									}
+								}
+
+								await versionRelationsService.createOne(
+									toVersionRelation(fkRelation, { versionedCollections }),
+									versionOpts,
+								);
+
+								// reference relation if target is versioned
+								if (relation.related_collection && this.schema.collections[relation.related_collection]?.versioning) {
+									const sourceField = await fieldsService.readOne(relation.collection, relation.field);
+									const versionFieldsService = new FieldsService({ knex: trx, schema: refreshedSchema });
+
+									await versionFieldsService.createField(
+										toVersionName(relation.collection),
+										toVersionField(sourceField as any, { reference: true }),
+										undefined,
+										versionOpts,
+									);
+
+									const versionRelationService = new RelationsService({
+										knex: trx,
+										// refresh schema with newly added table/fields
+										schema: await getSchema({ bypassCache: true, database: trx }),
+									});
+
+									await versionRelationService.createOne(toVersionRelation(relation, { reference: true }), versionOpts);
+								}
+							}
+
+							// Alias field on V(one_collection)
+							if (
+								relation.meta?.one_field &&
+								relation.meta?.one_collection &&
+								isVersionedCollection(refreshedSchema, relation.meta.one_collection) &&
+								this.schema.collections[relation.meta.one_collection]?.fields[relation.meta.one_field]
+							) {
+								const versionFieldsService = new FieldsService({ knex: trx, schema: refreshedSchema });
+								const aliasField = await fieldsService.readOne(relation.meta.one_collection, relation.meta.one_field);
+
+								await versionFieldsService.createField(
+									toVersionName(relation.meta.one_collection),
+									toVersionField(aliasField as any, { reference: true }),
+									undefined,
+									versionOpts,
+								);
+							}
+						}
 					} else if (!isVersioned && wasVersioned) {
 						const versionCollection = toVersionName(collectionKey);
 
