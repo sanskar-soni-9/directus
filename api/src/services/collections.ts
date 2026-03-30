@@ -35,6 +35,8 @@ import { getCollectionMetaUpdates } from './fields/get-collection-meta-updates.j
 import { getCollectionRelationList } from './fields/get-collection-relation-list.js';
 import { FieldsService } from './fields.js';
 import { ItemsService } from './items.js';
+import { toVersionCollection } from './versions/to-version-collection.js';
+import { toVersionName } from './versions/to-version-name.js';
 
 export class CollectionsService {
 	knex: Knex;
@@ -60,7 +62,10 @@ export class CollectionsService {
 	/**
 	 * Create a single new collection
 	 */
-	async createOne(payload: RawCollection, opts?: FieldMutationOptions): Promise<string> {
+	async createOne(
+		payload: RawCollection,
+		opts?: FieldMutationOptions & { bypassNamespaceCheck?: boolean },
+	): Promise<string> {
 		if (this.accountability && this.accountability.admin !== true) {
 			throw new ForbiddenError();
 		}
@@ -71,7 +76,7 @@ export class CollectionsService {
 			throw new InvalidPayloadError({ reason: `"collection" must be a non-empty string` });
 		}
 
-		if (payload.collection.startsWith('directus_')) {
+		if (payload.collection.startsWith('directus_') && opts?.bypassNamespaceCheck !== true) {
 			throw new InvalidPayloadError({ reason: `Collections can't start with "directus_"` });
 		}
 
@@ -216,6 +221,21 @@ export class CollectionsService {
 								opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
 						},
 					);
+				}
+
+				/**
+				 * Versioning sync — create version table when collection has versioning enabled.
+				 */
+				if (payload.meta?.versioning && payload.schema) {
+					const collectionsService = new CollectionsService({ knex: trx, schema: this.schema });
+
+					await collectionsService.createOne(toVersionCollection(payload), {
+						bypassNamespaceCheck: true,
+						autoPurgeCache: false,
+						autoPurgeSystemCache: false,
+						bypassEmitAction: (params) =>
+							opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+					});
 				}
 
 				return payload.collection;
@@ -445,40 +465,86 @@ export class CollectionsService {
 		const nestedActionEvents: ActionEventParams[] = [];
 
 		try {
-			const collectionsItemsService = new ItemsService('directus_collections', {
-				knex: this.knex,
-				accountability: this.accountability,
-				schema: this.schema,
-			});
-
-			const payload = data as Partial<Collection>;
-
-			if (!payload.meta) {
-				return collectionKey;
-			}
-
-			const exists = !!(await this.knex
-				.select('collection')
-				.from('directus_collections')
-				.where({ collection: collectionKey })
-				.first());
-
-			if (exists) {
-				await collectionsItemsService.updateOne(collectionKey, payload.meta, {
-					...opts,
-					bypassEmitAction: (params) =>
-						opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+			await transaction(this.knex, async (trx) => {
+				const collectionsItemsService = new ItemsService('directus_collections', {
+					knex: trx,
+					accountability: this.accountability,
+					schema: this.schema,
 				});
-			} else {
-				await collectionsItemsService.createOne(
-					{ ...payload.meta, collection: collectionKey },
-					{
+
+				const payload = data as Partial<Collection>;
+
+				if (!payload.meta) {
+					return;
+				}
+
+				const exists = !!(await trx
+					.select('collection')
+					.from('directus_collections')
+					.where({ collection: collectionKey })
+					.first());
+
+				if (exists) {
+					await collectionsItemsService.updateOne(collectionKey, payload.meta, {
 						...opts,
 						bypassEmitAction: (params) =>
 							opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
-					},
-				);
-			}
+					});
+				} else {
+					await collectionsItemsService.createOne(
+						{ ...payload.meta, collection: collectionKey },
+						{
+							...opts,
+							bypassEmitAction: (params) =>
+								opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+						},
+					);
+				}
+
+				/**
+				 * Versioning sync
+				 *
+				 * When versioning is enabled:
+				 *   - Create the version table (mirrors real fields, skips aliases)
+				 *
+				 * When versioning is disabled:
+				 *   Delete the version table and all its contents.
+				 */
+				if (payload.meta && 'versioning' in payload.meta && this.schema.collections[collectionKey]) {
+					const wasVersioned = this.schema.collections[collectionKey]?.versioning;
+					const isVersioned = payload.meta?.versioning;
+
+					const collectionsService = new CollectionsService({ knex: trx, schema: this.schema });
+
+					if (isVersioned && !wasVersioned) {
+						// build version table definition
+						const existing = await collectionsService.readOne(collectionKey);
+
+						const fieldsService = new FieldsService({ knex: trx, schema: this.schema });
+						existing.fields = await fieldsService.readAll(collectionKey);
+
+						// create version table
+						await collectionsService.createOne(toVersionCollection(existing), {
+							bypassNamespaceCheck: true,
+							autoPurgeCache: false,
+							autoPurgeSystemCache: false,
+							bypassEmitAction: (params) =>
+								opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+						});
+					} else if (!isVersioned && wasVersioned) {
+						const versionCollection = toVersionName(collectionKey);
+
+						if (this.schema.collections[versionCollection]) {
+							await collectionsService.deleteOne(versionCollection, {
+								autoPurgeCache: false,
+								autoPurgeSystemCache: false,
+								bypassEmitAction: (params) =>
+									opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+							});
+						}
+					}
+				}
+			});
 
 			return collectionKey;
 		} finally {
@@ -770,6 +836,22 @@ export class CollectionsService {
 							.update({ one_allowed_collections: newAllowedCollections })
 							.where({ id: relation.meta!.id });
 					}
+				}
+
+				/**
+				 * Versioning sync — delete version table if it exists.
+				 */
+				const versionTableName = toVersionName(collectionKey);
+
+				if (this.schema.collections[versionTableName]) {
+					const collectionsService = new CollectionsService({ knex: trx, schema: this.schema });
+
+					await collectionsService.deleteOne(versionTableName, {
+						autoPurgeCache: false,
+						autoPurgeSystemCache: false,
+						bypassEmitAction: (params) =>
+							opts?.bypassEmitAction ? opts.bypassEmitAction(params) : nestedActionEvents.push(params),
+					});
 				}
 			});
 
