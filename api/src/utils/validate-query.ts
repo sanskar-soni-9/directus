@@ -6,6 +6,7 @@ import { isPlainObject, uniq } from 'lodash-es';
 import { stringify } from 'wellknown';
 import { parseJsonFunction } from '../database/helpers/fn/json/parse-function.js';
 import { calculateFieldDepth } from './calculate-field-depth.js';
+import { extractFunctionName } from './extract-function-name.js';
 import { getFieldRelationalDepth } from './get-field-relational-depth.js';
 
 const env = useEnv();
@@ -187,9 +188,7 @@ function validateAlias(alias: any) {
 			throw new InvalidQueryError({ reason: `"alias" key can't contain a period character \`.\`` });
 		}
 
-		const isJsonFunction = value.trim().startsWith('json(') && value.trim().endsWith(')');
-
-		if (isJsonFunction) {
+		if (extractFunctionName(value) === 'json') {
 			parseJsonFunction(value.trim()); // throws InvalidQueryError on invalid json() syntax
 		} else if (value.includes('.')) {
 			throw new InvalidQueryError({ reason: `"alias" value can't contain a period character \`.\`` });

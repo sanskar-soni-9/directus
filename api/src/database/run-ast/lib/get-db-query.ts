@@ -4,6 +4,7 @@ import type { Knex } from 'knex';
 import { cloneDeep } from 'lodash-es';
 import type { Context } from '../../../permissions/types.js';
 import type { FieldNode, FunctionFieldNode, O2MNode } from '../../../types/ast.js';
+import { extractFunctionName } from '../../../utils/extract-function-name.js';
 import { getCollectionFromAlias } from '../../../utils/get-collection-from-alias.js';
 import type { AliasMap } from '../../../utils/get-column-path.js';
 import { splitFieldPath } from '../../../utils/split-field-path.js';
@@ -100,7 +101,7 @@ export function getDBQuery(
 		const jsonAliasMap: Record<string, string> = {};
 
 		for (const node of fieldNodes) {
-			if (node.type === 'functionField' && node.name.startsWith('json(')) {
+			if (node.type === 'functionField' && extractFunctionName(node.name) === 'json') {
 				jsonAliasMap[applyFunctionToColumnName(node.fieldKey)] = node.name;
 			}
 		}
