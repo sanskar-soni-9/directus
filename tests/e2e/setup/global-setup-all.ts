@@ -28,6 +28,9 @@ export async function setup(project: TestProject) {
 			options: {
 				prefix: database,
 				port: port,
+				env: {
+					CACHE_SCHEMA: 'false',
+				},
 				docker: {
 					port: port + 10,
 					keep: true,

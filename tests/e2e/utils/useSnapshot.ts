@@ -1,10 +1,7 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import {
-	createItem,
 	type DirectusClient,
-	readCollection,
-	readItems,
 	type RestClient,
 	schemaApply,
 	schemaDiff,
@@ -38,37 +35,6 @@ export async function useSnapshot<Schema>(
 
 	const folder = getCallerFolder(1);
 	const uid = getUID(1);
-
-	let skipOrder = false;
-
-	try {
-		await api.request(
-			createItem('schema_apply_order', {
-				group: uid,
-			}),
-		);
-	} catch {
-		skipOrder = true;
-	}
-
-	if (!skipOrder) {
-		const orders = await api.request(readItems('schema_apply_order'));
-
-		const orderIndex = orders.findIndex((raw) => raw['group']! === uid);
-
-		if (orderIndex !== 0) {
-			let inFrontExists = false;
-
-			do {
-				try {
-					await api.request(readCollection(orders[Number(orderIndex) - 1]!['group']!));
-					inFrontExists = true;
-				} catch {
-					await new Promise((r) => setTimeout(r, 1000));
-				}
-			} while (!inFrontExists);
-		}
-	}
 
 	const snapshot: Snapshot = JSON.parse(await readFile(join(folder, file), { encoding: 'utf8' }));
 	const collectionIDs = snapshot.collections.map((collection) => collection.collection);
@@ -111,7 +77,7 @@ export async function useSnapshot<Schema>(
 		groups.push(uid);
 	}
 
-	let tries = 5;
+	let tries = 3;
 
 	while (tries > 0) {
 		try {
@@ -138,7 +104,7 @@ export async function useSnapshot<Schema>(
 					});
 				}
 
-				await api.request(schemaApply(diff));
+				await api.request(schemaApply(diff, true));
 				break;
 			}
 		} catch (e: any) {

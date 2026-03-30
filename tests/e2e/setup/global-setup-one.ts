@@ -30,6 +30,9 @@ export async function setup(project: TestProject) {
 		dev: true,
 		watch: true,
 		prefix: database,
+		env: {
+			CACHE_SCHEMA: 'false',
+		},
 		docker: {
 			port: String(Number(project.config.env['PORT']) + 10),
 			keep: true,
