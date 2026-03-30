@@ -227,9 +227,9 @@ export class CollectionsService {
 				 * Versioning sync — create version table when collection has versioning enabled.
 				 */
 				if (payload.meta?.versioning && payload.schema) {
-					const collectionsService = new CollectionsService({ knex: trx, schema: this.schema });
+					const versionCollectionsService = new CollectionsService({ knex: trx, schema: this.schema });
 
-					await collectionsService.createOne(toVersionCollection(payload), {
+					await versionCollectionsService.createOne(toVersionCollection(payload), {
 						bypassNamespaceCheck: true,
 						autoPurgeCache: false,
 						autoPurgeSystemCache: false,
@@ -514,17 +514,17 @@ export class CollectionsService {
 					const wasVersioned = this.schema.collections[collectionKey]?.versioning;
 					const isVersioned = payload.meta?.versioning;
 
-					const collectionsService = new CollectionsService({ knex: trx, schema: this.schema });
+					const versionCollectionsService = new CollectionsService({ knex: trx, schema: this.schema });
 
 					if (isVersioned && !wasVersioned) {
 						// build version table definition
-						const existing = await collectionsService.readOne(collectionKey);
+						const existing = await versionCollectionsService.readOne(collectionKey);
 
 						const fieldsService = new FieldsService({ knex: trx, schema: this.schema });
 						existing.fields = await fieldsService.readAll(collectionKey);
 
 						// create version table
-						await collectionsService.createOne(toVersionCollection(existing), {
+						await versionCollectionsService.createOne(toVersionCollection(existing), {
 							bypassNamespaceCheck: true,
 							autoPurgeCache: false,
 							autoPurgeSystemCache: false,
@@ -535,7 +535,7 @@ export class CollectionsService {
 						const versionCollection = toVersionName(collectionKey);
 
 						if (this.schema.collections[versionCollection]) {
-							await collectionsService.deleteOne(versionCollection, {
+							await versionCollectionsService.deleteOne(versionCollection, {
 								autoPurgeCache: false,
 								autoPurgeSystemCache: false,
 								bypassEmitAction: (params) =>
@@ -844,9 +844,9 @@ export class CollectionsService {
 				const versionTableName = toVersionName(collectionKey);
 
 				if (this.schema.collections[versionTableName]) {
-					const collectionsService = new CollectionsService({ knex: trx, schema: this.schema });
+					const versionCollectionsService = new CollectionsService({ knex: trx, schema: this.schema });
 
-					await collectionsService.deleteOne(versionTableName, {
+					await versionCollectionsService.deleteOne(versionTableName, {
 						autoPurgeCache: false,
 						autoPurgeSystemCache: false,
 						bypassEmitAction: (params) =>
