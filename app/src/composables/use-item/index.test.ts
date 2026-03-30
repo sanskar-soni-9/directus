@@ -218,20 +218,11 @@ describe('Save As Copy', () => {
 	});
 });
 
-<<<<<<< HEAD
 describe('isArchived', () => {
-=======
-describe('Query merging', () => {
-	const mockCollection = {
-		collection: 'test',
-	} as AppCollection;
-
->>>>>>> ed6d4cc00e (Fix Role not showing on user details page (#26985))
 	const mockPrimaryKeyField = {
 		field: 'id',
 	} as Field;
 
-<<<<<<< HEAD
 	test('should return null when no archive_field is configured', () => {
 		const mockCollection = {
 			collection: 'test',
@@ -337,7 +328,18 @@ describe('Query merging', () => {
 		item.value = { status: 'active' } as any;
 
 		expect(isArchived.value).toBe(false);
-=======
+	});
+});
+
+describe('Query merging', () => {
+	const mockCollection = {
+		collection: 'test',
+	} as AppCollection;
+
+	const mockPrimaryKeyField = {
+		field: 'id',
+	} as Field;
+
 	const mockFields = [mockPrimaryKeyField] as Field[];
 
 	beforeEach(() => {
@@ -390,7 +392,6 @@ describe('Query merging', () => {
 				}),
 			}),
 		);
->>>>>>> ed6d4cc00e (Fix Role not showing on user details page (#26985))
 	});
 });
 
