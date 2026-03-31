@@ -272,8 +272,8 @@ paths:
     $ref: './paths/utils/export.yaml'
   /utils/cache/clear:
     $ref: './paths/utils/cache-clear.yaml'
-  /utils/assets/clear:
-    $ref: './paths/utils/assets-clear.yaml'
+  /assets/transformations:
+    $ref: './paths/assets/transformations.yaml'
   /utils/random/string:
     $ref: './paths/utils/random.yaml'
 

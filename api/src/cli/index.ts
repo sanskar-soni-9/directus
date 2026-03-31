@@ -2,7 +2,7 @@ import { Command, Option } from 'commander';
 import { version } from 'directus/version';
 import emitter from '../emitter.js';
 import { startServer } from '../server.js';
-import assetsClear from './commands/assets/transformations/clear.js';
+import transformationsClear from './commands/assets/transformations/clear.js';
 import bootstrap from './commands/bootstrap/index.js';
 import cacheClear from './commands/cache/clear.js';
 import count from './commands/count/index.js';
@@ -88,7 +88,7 @@ export async function createCli(): Promise<Command> {
 		.command('clear')
 		.description('Clear generated asset transformations (thumbnails, resizes, format conversions)')
 		.option('--files <value...>', 'Clear transformations for specific files by UUID (repeatable)')
-		.action(assetsClear);
+		.action(transformationsClear);
 
 	program
 		.command('cache')

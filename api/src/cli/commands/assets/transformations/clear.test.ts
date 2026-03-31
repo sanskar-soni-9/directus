@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { useLogger } from '../../../../logger/index.js';
 import { AssetsService } from '../../../../services/assets.js';
 import { getSchema } from '../../../../utils/get-schema.js';
-import assetsClear from './clear.js';
+import transformationsClear from './clear.js';
 
 vi.mock('../../../../logger/index.js', () => ({
 	useLogger: vi.fn(),
@@ -36,7 +36,7 @@ describe('assets transformations clear command', () => {
 	});
 
 	test('clears all transformations when no file specified', async () => {
-		await assetsClear({});
+		await transformationsClear({});
 
 		expect(mockClearTransformations).toHaveBeenCalledWith(undefined);
 		expect(process.stdout.write).toHaveBeenCalledWith('Cleared asset transformations successfully\n');
@@ -44,21 +44,21 @@ describe('assets transformations clear command', () => {
 	});
 
 	test('passes file array to service', async () => {
-		await assetsClear({ files: ['abc-123'] });
+		await transformationsClear({ files: ['abc-123'] });
 
 		expect(mockClearTransformations).toHaveBeenCalledWith({ files: ['abc-123'] });
 		expect(process.exit).toHaveBeenCalledWith(0);
 	});
 
 	test('passes multiple files to service', async () => {
-		await assetsClear({ files: ['abc-123', 'def-456'] });
+		await transformationsClear({ files: ['abc-123', 'def-456'] });
 
 		expect(mockClearTransformations).toHaveBeenCalledWith({ files: ['abc-123', 'def-456'] });
 		expect(process.exit).toHaveBeenCalledWith(0);
 	});
 
 	test('creates service without accountability', async () => {
-		await assetsClear({});
+		await transformationsClear({});
 
 		expect(AssetsService).toHaveBeenCalledWith({
 			schema: expect.anything(),
@@ -69,7 +69,7 @@ describe('assets transformations clear command', () => {
 		const error = new Error('Storage failure');
 		mockClearTransformations.mockRejectedValue(error);
 
-		await assetsClear({});
+		await transformationsClear({});
 
 		expect(mockLogger.error).toHaveBeenCalledWith(error);
 		expect(process.exit).toHaveBeenCalledWith(1);
