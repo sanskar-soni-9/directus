@@ -328,8 +328,7 @@ catalog:
 
 catalogMode: strict
 
-settings:
-  minimum-release-age: 10080 # 7 days
+minimumReleaseAge: 10080 # 7 days
 
 onlyBuiltDependencies:
   - '@fortawesome/fontawesome-common-types'
