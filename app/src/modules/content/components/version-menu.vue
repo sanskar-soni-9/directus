@@ -80,6 +80,8 @@ const { deleteDialogActive, onDeleteVersion } = useDeleteDialog();
 const { isCurrentVersionGlobal, isCurrentVersionNew, canAccessGlobalVersion, isVersionKeyGlobal, isVersionNew } =
 	useGlobalVersions();
 
+const isNewItem = computed(() => primaryKey.value === '+');
+
 const newVersionKeyReservedTooltip = computed(() =>
 	isVersionKeyGlobal(newVersionKey.value) ? t('reserved_version_key', { key: newVersionKey.value }) : undefined,
 );
@@ -293,9 +295,15 @@ function hasVersionEdits(version: ContentVersionMaybeNew | null) {
 			</template>
 
 			<VList class="version-list">
-				<VListItem class="version-item" clickable :active="currentVersion === null" @click="switchVersion(null)">
+				<VListItem
+					class="version-item"
+					clickable
+					:active="currentVersion === null"
+					:disabled="isNewItem"
+					@click="switchVersion(null)"
+				>
 					<VListItemIcon class="version-item-icon">
-						<span v-tooltip="$t('content_edited')" class="edit-dot" />
+						<span v-if="!isNewItem" v-tooltip="$t('content_edited')" class="edit-dot" />
 					</VListItemIcon>
 
 					<VListItemContent>
@@ -340,7 +348,12 @@ function hasVersionEdits(version: ContentVersionMaybeNew | null) {
 				<template v-if="createVersionsAllowed">
 					<VDivider />
 
-					<VListItem clickable @click="createDialogActive = true">
+					<VListItem
+						v-tooltip="isNewItem ? $t('version_create_item_less') : undefined"
+						:disabled="isNewItem"
+						clickable
+						@click="createDialogActive = true"
+					>
 						<VListItemIcon>
 							<VIcon name="add" />
 						</VListItemIcon>
@@ -362,7 +375,7 @@ function hasVersionEdits(version: ContentVersionMaybeNew | null) {
 							<VIcon name="arrow_upload_progress" />
 						</VListItemIcon>
 
-						<VListItemContent>{{ $t('promote_version') }}</VListItemContent>
+						<VListItemContent>{{ $t('publish_version') }}</VListItemContent>
 					</VListItem>
 
 					<VListItem v-if="updateVersionsAllowed && !isCurrentVersionGlobal" clickable @click="openRenameDialog">
