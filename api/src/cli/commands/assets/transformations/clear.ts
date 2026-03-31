@@ -1,6 +1,6 @@
-import { useLogger } from '../../../logger/index.js';
-import { AssetsService } from '../../../services/assets.js';
-import { getSchema } from '../../../utils/get-schema.js';
+import { useLogger } from '../../../../logger/index.js';
+import { AssetsService } from '../../../../services/assets.js';
+import { getSchema } from '../../../../utils/get-schema.js';
 
 export default async function assetsClear({ files }: { files?: string[] }): Promise<void> {
 	const logger = useLogger();

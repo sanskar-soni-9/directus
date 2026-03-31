@@ -2,7 +2,7 @@ import { Command, Option } from 'commander';
 import { version } from 'directus/version';
 import emitter from '../emitter.js';
 import { startServer } from '../server.js';
-import assetsClear from './commands/assets/clear.js';
+import assetsClear from './commands/assets/transformations/clear.js';
 import bootstrap from './commands/bootstrap/index.js';
 import cacheClear from './commands/cache/clear.js';
 import count from './commands/count/index.js';

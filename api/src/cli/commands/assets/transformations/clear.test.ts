@@ -1,22 +1,22 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { useLogger } from '../../../logger/index.js';
-import { AssetsService } from '../../../services/assets.js';
-import { getSchema } from '../../../utils/get-schema.js';
+import { useLogger } from '../../../../logger/index.js';
+import { AssetsService } from '../../../../services/assets.js';
+import { getSchema } from '../../../../utils/get-schema.js';
 import assetsClear from './clear.js';
 
-vi.mock('../../../logger/index.js', () => ({
+vi.mock('../../../../logger/index.js', () => ({
 	useLogger: vi.fn(),
 }));
 
-vi.mock('../../../utils/get-schema.js', () => ({
+vi.mock('../../../../utils/get-schema.js', () => ({
 	getSchema: vi.fn(),
 }));
 
-vi.mock('../../../services/assets.js', () => ({
+vi.mock('../../../../services/assets.js', () => ({
 	AssetsService: vi.fn(),
 }));
 
-describe('assets clear command', () => {
+describe('assets transformations clear command', () => {
 	let mockLogger: any;
 	let mockClearTransformations: any;
 
