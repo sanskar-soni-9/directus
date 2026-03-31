@@ -40,6 +40,7 @@ export class Signal<T> {
 				if (result !== undefined) {
 					clearTimeout(timeoutId);
 					resolve(result);
+					this.unsubscribe(checkCondition);
 				}
 			};
 
