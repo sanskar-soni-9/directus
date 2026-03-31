@@ -1,5 +1,5 @@
 import { useLogger } from '../../../logger/index.js';
-import { UtilsService } from '../../../services/utils.js';
+import { AssetsService } from '../../../services/assets.js';
 import { getSchema } from '../../../utils/get-schema.js';
 
 export default async function assetsClear({ files }: { files?: string[] }): Promise<void> {
@@ -8,13 +8,13 @@ export default async function assetsClear({ files }: { files?: string[] }): Prom
 	try {
 		const schema = await getSchema();
 
-		const service = new UtilsService({
+		const service = new AssetsService({
 			schema,
 		});
 
-		await service.clearAssetVariants({ files });
+		await service.clearTransformations(files ? { files } : undefined);
 
-		process.stdout.write('Cleared asset variants successfully\n');
+		process.stdout.write('Cleared asset transformations successfully\n');
 		process.exit(0);
 	} catch (err: any) {
 		logger.error(err);

@@ -84,9 +84,10 @@ export async function createCli(): Promise<Command> {
 
 	program
 		.command('assets')
+		.command('transformations')
 		.command('clear')
-		.description('Clear generated asset variants (thumbnails, transformations)')
-		.option('--files <value...>', 'Clear variants for specific files by UUID (repeatable)')
+		.description('Clear generated asset transformations (thumbnails, resizes, format conversions)')
+		.option('--files <value...>', 'Clear transformations for specific files by UUID (repeatable)')
 		.action(assetsClear);
 
 	program

@@ -325,4 +325,33 @@ router.get(
 	}),
 );
 
+const clearTransformationsSchema = z.object({
+	files: z
+		.union([
+			z.string().refine(isValidUuid, '"files" must be a valid UUID'),
+			z.array(z.string().refine(isValidUuid, 'Each file ID must be a valid UUID')),
+		])
+		.optional(),
+});
+
+router.delete(
+	'/transformations',
+	asyncHandler(async (req, res) => {
+		const service = new AssetsService({
+			accountability: req.accountability,
+			schema: req.schema,
+		});
+
+		const parseResult = clearTransformationsSchema.safeParse(req.query);
+
+		if (!parseResult.success) {
+			throw new InvalidPayloadError({ reason: fromZodError(parseResult.error).message });
+		}
+
+		await service.clearTransformations(parseResult.data.files ? { files: parseResult.data.files } : undefined);
+
+		res.status(204).end();
+	}),
+);
+
 export default router;

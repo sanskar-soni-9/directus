@@ -12,6 +12,7 @@ import { createTracker, MockClient, Tracker } from 'knex-mock-client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, type MockedFunction, test, vi } from 'vitest';
 import { validateItemAccess } from '../permissions/modules/validate-access/lib/validate-item-access.js';
 import { getStorage } from '../storage/index.js';
+import { useStore } from '../utils/store.js';
 import { AssetsService } from './assets.js';
 import { FilesService } from './files.js';
 import { FoldersService } from './folders.js';
@@ -48,6 +49,15 @@ vi.mock('../utils/get-schema.js', () => ({
 }));
 
 vi.mock('../storage/index.js');
+
+vi.mock('../utils/store.js', () => ({
+	useStore: vi.fn().mockReturnValue((callback: any) =>
+		callback({
+			get: vi.fn().mockResolvedValue(false),
+			set: vi.fn().mockResolvedValue(undefined),
+		}),
+	),
+}));
 
 describe('AssetsService', () => {
 	let db: MockedFunction<Knex>;
@@ -758,6 +768,160 @@ describe('AssetsService', () => {
 			const header = contentDisposition(folderName, { type: 'attachment' });
 			expect(header).toContain('attachment');
 			expect(header).toContain('filename');
+		});
+	});
+
+	describe('#clearTransformations', () => {
+		const mockSchema = { collections: {}, relations: [] } as SchemaOverview;
+
+		beforeEach(() => {
+			vi.mocked(useStore).mockReturnValue(((callback: any) =>
+				callback({
+					get: vi.fn().mockResolvedValue(false),
+					set: vi.fn().mockResolvedValue(undefined),
+				})) as any);
+		});
+
+		function createMockDisk(files: Map<string, string[]>) {
+			const disk: any = {
+				list: async function* (prefix: string) {
+					for (const [, storageFiles] of files) {
+						for (const file of storageFiles) {
+							const name = file.replace(/\.[^.]+$/, '');
+
+							if (name.startsWith(prefix) || file.startsWith(prefix)) {
+								yield file;
+							}
+						}
+					}
+				},
+				delete: vi.fn(),
+				bulkDelete: vi.fn(),
+			};
+
+			return disk;
+		}
+
+		function createMockKnex(files: { id: string; filename_disk: string; storage: string }[]) {
+			const chainable: any = {
+				where: vi.fn().mockImplementation((_col: string, id: string) => {
+					const filtered = files.filter((f) => f.id === id);
+					return { ...chainable, then: (resolve: any) => resolve(filtered), [Symbol.toStringTag]: 'Promise' };
+				}),
+				whereIn: vi.fn().mockImplementation((_col: string, ids: string[]) => {
+					const filtered = files.filter((f) => ids.includes(f.id));
+					return { ...chainable, then: (resolve: any) => resolve(filtered), [Symbol.toStringTag]: 'Promise' };
+				}),
+				then: (resolve: any) => resolve(files),
+				[Symbol.toStringTag]: 'Promise',
+			};
+
+			return {
+				select: vi.fn().mockReturnValue({
+					from: vi.fn().mockReturnValue(chainable),
+				}),
+			} as any;
+		}
+
+		test('throws ForbiddenError for non-admin', async () => {
+			const service = new AssetsService({
+				accountability: { admin: false, role: null, user: null, roles: [], ip: '', app: false },
+				schema: mockSchema,
+			});
+
+			await expect(service.clearTransformations()).rejects.toThrow("You don't have permission to access this.");
+		});
+
+		test('throws when clearing is already in progress', async () => {
+			vi.mocked(useStore).mockReturnValueOnce(((callback: any) =>
+				callback({
+					get: vi.fn().mockResolvedValue(true),
+					set: vi.fn(),
+				})) as any);
+
+			const service = new AssetsService({
+				schema: mockSchema,
+			});
+
+			await expect(service.clearTransformations()).rejects.toThrow(
+				'Asset transformation clearing is already in progress',
+			);
+		});
+
+		test('deletes transformations and preserves originals', async () => {
+			const files = [{ id: '1', filename_disk: 'abc123.jpg', storage: 'local' }];
+			const storageFiles = new Map([['abc123', ['abc123.jpg', 'abc123__hash1.jpg', 'abc123__hash2.webp']]]);
+			const disk = createMockDisk(storageFiles);
+
+			vi.mocked(getStorage).mockResolvedValue({ location: () => disk } as any);
+
+			const service = new AssetsService({
+				knex: createMockKnex(files),
+				schema: mockSchema,
+			});
+
+			await service.clearTransformations();
+
+			expect(disk.bulkDelete).toHaveBeenCalledWith(['abc123__hash1.jpg', 'abc123__hash2.webp']);
+		});
+
+		test('skips files without __ transformation pattern', async () => {
+			const files = [{ id: '1', filename_disk: 'abc.jpg', storage: 'local' }];
+			const storageFiles = new Map([['abc', ['abc.jpg', 'abcdef.jpg']]]);
+			const disk = createMockDisk(storageFiles);
+
+			vi.mocked(getStorage).mockResolvedValue({ location: () => disk } as any);
+
+			const service = new AssetsService({
+				knex: createMockKnex(files),
+				schema: mockSchema,
+			});
+
+			await service.clearTransformations();
+
+			expect(disk.bulkDelete).not.toHaveBeenCalled();
+		});
+
+		test('accepts array of file IDs', async () => {
+			const files = [
+				{ id: '1', filename_disk: 'abc.jpg', storage: 'local' },
+				{ id: '2', filename_disk: 'def.jpg', storage: 'local' },
+			];
+
+			const storageFiles = new Map([
+				['abc', ['abc.jpg', 'abc__hash1.jpg']],
+				['def', ['def.jpg', 'def__hash1.jpg']],
+			]);
+
+			const disk = createMockDisk(storageFiles);
+
+			vi.mocked(getStorage).mockResolvedValue({ location: () => disk } as any);
+
+			const service = new AssetsService({
+				knex: createMockKnex(files),
+				schema: mockSchema,
+			});
+
+			await service.clearTransformations({ files: ['1', '2'] });
+
+			expect(disk.bulkDelete).toHaveBeenCalledWith(['abc__hash1.jpg', 'def__hash1.jpg']);
+		});
+
+		test('does nothing when no transformations exist', async () => {
+			const files = [{ id: '1', filename_disk: 'abc.jpg', storage: 'local' }];
+			const storageFiles = new Map([['abc', ['abc.jpg']]]);
+			const disk = createMockDisk(storageFiles);
+
+			vi.mocked(getStorage).mockResolvedValue({ location: () => disk } as any);
+
+			const service = new AssetsService({
+				knex: createMockKnex(files),
+				schema: mockSchema,
+			});
+
+			await service.clearTransformations();
+
+			expect(disk.bulkDelete).not.toHaveBeenCalled();
 		});
 	});
 });
