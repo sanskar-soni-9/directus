@@ -328,6 +328,9 @@ catalog:
 
 catalogMode: strict
 
+settings:
+  minimum-release-age: 7d
+
 onlyBuiltDependencies:
   - '@fortawesome/fontawesome-common-types'
   - '@fortawesome/fontawesome-svg-core'
