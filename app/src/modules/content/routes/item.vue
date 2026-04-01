@@ -244,8 +244,6 @@ useShortcut(
 	form,
 );
 
-useShortcut('meta+e', editPublishedVersion, form);
-
 const isSavable = computed(() => {
 	if (saveAllowed.value === false && currentVersion.value === null) return false;
 	if (hasEdits.value === true) return true;
@@ -900,14 +898,7 @@ function editPublishedVersion() {
 				</VCard>
 			</VDialog>
 			<template v-if="shouldShowVersioning">
-				<VButton
-					v-if="isPublishedVersion"
-					rounded
-					icon
-					:tooltip="`${$t('edit_item')} [${translateShortcut(['meta', 'e'])}]`"
-					small
-					@click="editPublishedVersion"
-				>
+				<VButton v-if="isPublishedVersion" rounded icon :tooltip="$t('edit_item')" small @click="editPublishedVersion">
 					<VIcon name="edit" small />
 				</VButton>
 				<VButton
