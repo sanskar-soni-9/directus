@@ -36,6 +36,7 @@ import { validateKeys } from '../utils/validate-keys.js';
 import { validateUserCountIntegrity } from '../utils/validate-user-count-integrity.js';
 import { handleVersion } from '../utils/versioning/handle-version.js';
 import { PayloadService } from './payload.js';
+import { toVersionName } from './versions/to-version-name.js';
 
 const env = useEnv();
 
@@ -515,9 +516,11 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 					)
 				: query;
 
+		const collection = query.version ? toVersionName(this.collection) : this.collection;
+
 		let ast = await getAstFromQuery(
 			{
-				collection: this.collection,
+				collection,
 				query: updatedQuery,
 				accountability: this.accountability,
 			},
