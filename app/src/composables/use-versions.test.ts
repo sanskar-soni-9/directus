@@ -256,6 +256,43 @@ describe('useVersions', () => {
 		});
 	});
 
+	describe('isPublishedVersion', () => {
+		it('should be true when no version is selected (published view)', () => {
+			const { isPublishedVersion } = useVersions(ref('test_collection'), ref(false), ref('1'));
+			expect(isPublishedVersion.value).toBe(true);
+		});
+
+		it('should be false when a version is selected', async () => {
+			const existingDraft: ContentVersion = {
+				id: 'draft-id',
+				key: 'draft',
+				name: null,
+				collection: 'test_collection',
+				item: '1',
+				hash: 'abc',
+				date_created: '2024-01-01',
+				date_updated: '2024-01-01',
+				user_created: 'user-1',
+				user_updated: 'user-1',
+				delta: {},
+			};
+
+			vi.mocked(api.get).mockResolvedValueOnce({ data: { data: [existingDraft] } });
+
+			const { versions, currentVersion, isPublishedVersion } = useVersions(
+				ref('test_collection'),
+				ref(false),
+				ref('1'),
+			);
+
+			await vi.waitFor(() => expect(api.get).toHaveBeenCalled());
+
+			currentVersion.value = versions.value.find((v) => v.key === 'draft') ?? null;
+
+			expect(isPublishedVersion.value).toBe(false);
+		});
+	});
+
 	describe('saveVersion', () => {
 		it('should use actualPrimaryKey for new version creation on singletons', async () => {
 			const { saveVersion, currentVersion, versions } = useVersions(ref('singleton_collection'), ref(true), ref(null));
