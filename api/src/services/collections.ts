@@ -567,11 +567,11 @@ export class CollectionsService {
 								(r) => r.collection === versionRelationCollection && r.field === relation.field,
 							);
 
-							if (
-								!versionRelationExists &&
+							const fkCollectionIsVersioned =
 								isVersionedCollection(refreshedSchema, relation.collection) &&
-								this.schema.collections[relation.collection]?.fields[relation.field]
-							) {
+								!!this.schema.collections[relation.collection]?.fields[relation.field];
+
+							if (!versionRelationExists && fkCollectionIsVersioned) {
 								// If an m2a add only collections that are versioned
 								const versionedCollections = [];
 								const oneCollections = fkRelation.meta?.one_allowed_collections;
@@ -588,27 +588,35 @@ export class CollectionsService {
 									toVersionRelation(fkRelation, { versionedCollections }),
 									versionOpts,
 								);
+							}
 
-								// reference relation if target is versioned
-								if (relation.related_collection && this.schema.collections[relation.related_collection]?.versioning) {
-									const sourceField = await fieldsService.readOne(relation.collection, relation.field);
-									const versionFieldsService = new FieldsService({ knex: trx, schema: refreshedSchema });
+							// Reference field + relation when target is versioned.
+							const versionRefRelationExists = refreshedSchema.relations.some(
+								(r) => r.collection === versionRelationCollection && r.field === toVersionName(relation.field),
+							);
 
-									await versionFieldsService.createField(
-										toVersionName(relation.collection),
-										toVersionField(sourceField as any, { reference: true }),
-										undefined,
-										versionOpts,
-									);
+							if (
+								fkCollectionIsVersioned &&
+								!versionRefRelationExists &&
+								relation.related_collection &&
+								isVersionedCollection(refreshedSchema, relation.related_collection)
+							) {
+								const sourceField = await fieldsService.readOne(relation.collection, relation.field);
+								const versionFieldsService = new FieldsService({ knex: trx, schema: refreshedSchema });
 
-									const versionRelationService = new RelationsService({
-										knex: trx,
-										// refresh schema with newly added table/fields
-										schema: await getSchema({ bypassCache: true, database: trx }),
-									});
+								await versionFieldsService.createField(
+									toVersionName(relation.collection),
+									toVersionField(sourceField as any, { reference: true }),
+									undefined,
+									versionOpts,
+								);
 
-									await versionRelationService.createOne(toVersionRelation(relation, { reference: true }), versionOpts);
-								}
+								const versionRelationService = new RelationsService({
+									knex: trx,
+									schema: await getSchema({ bypassCache: true, database: trx }),
+								});
+
+								await versionRelationService.createOne(toVersionRelation(relation, { reference: true }), versionOpts);
 							}
 
 							// Alias field on V(one_collection)

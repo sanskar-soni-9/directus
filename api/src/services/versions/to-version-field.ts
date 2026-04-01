@@ -15,7 +15,7 @@ export function toVersionField(payload: Field | RawField, opts?: { reference: bo
 
 	if (node.collection) node.collection = toVersionName(node.collection);
 
-	if (opts?.reference) {
+	if (opts?.reference && node.schema) {
 		node.field = toVersionName(node.field);
 	}
 
@@ -24,7 +24,7 @@ export function toVersionField(payload: Field | RawField, opts?: { reference: bo
 		unset(node.meta, 'sort');
 
 		if (node.meta.collection) node.meta.collection = toVersionName(node.meta.collection);
-		if (opts?.reference && node.meta.field) node.meta.field = toVersionName(node.meta.field);
+		if (opts?.reference && node.schema && node.meta.field) node.meta.field = toVersionName(node.meta.field);
 
 		// Remove "validation"
 		node.meta.required = false;

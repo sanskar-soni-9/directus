@@ -180,6 +180,11 @@ export class RelationBuilder {
 			}
 		}
 
+		// Resolve foreign_key_column from the related collection's primary key
+		if (this._data.schema && this._data.related_collection && schema.collections[this._data.related_collection]) {
+			this._data.schema.foreign_key_column = schema.collections[this._data.related_collection]!.primary;
+		}
+
 		const { _kind, _type, ...relation } = this._data;
 		return relation;
 	}

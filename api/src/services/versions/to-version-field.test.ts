@@ -207,7 +207,7 @@ describe('toVersionField', () => {
 			expect(result.meta).not.toHaveProperty('sort');
 		});
 
-		test('versions field name with reference', () => {
+		test('preserves field name on reference for aliases', () => {
 			const result = toVersionField(
 				{
 					collection: 'articles',
@@ -219,8 +219,8 @@ describe('toVersionField', () => {
 				{ reference: true },
 			);
 
-			expect(result.field).toBe('directus_versions_o2m');
-			expect(result.meta!.field).toBe('directus_versions_o2m');
+			expect(result.field).toBe('o2m');
+			expect(result.meta!.field).toBe('o2m');
 		});
 
 		test('does not mutate original payload', () => {

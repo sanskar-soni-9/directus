@@ -32,6 +32,7 @@ test('relation on m2o field', () => {
 		  "schema": {
 		    "column": "author",
 		    "constraint_name": "article_author_foreign",
+		    "foreign_key_column": "id",
 		    "foreign_key_schema": "public",
 		    "foreign_key_table": "users",
 		    "on_delete": "SET NULL",
@@ -74,6 +75,7 @@ test('relation on o2m field', () => {
 		  "schema": {
 		    "column": "tags",
 		    "constraint_name": "article_tags_foreign",
+		    "foreign_key_column": "id",
 		    "foreign_key_schema": "public",
 		    "foreign_key_table": "tags",
 		    "on_delete": "SET NULL",

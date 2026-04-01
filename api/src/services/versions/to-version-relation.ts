@@ -68,7 +68,6 @@ export function toVersionRelation(
 			}
 
 			if (node.meta.one_collection) node.meta.one_collection = toVersionName(node.meta.one_collection);
-			if (node.meta.one_field) node.meta.one_field = toVersionName(node.meta.one_field);
 		}
 	}
 

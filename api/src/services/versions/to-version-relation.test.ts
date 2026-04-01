@@ -81,18 +81,20 @@ describe('toVersionRelation', () => {
 			const result = toVersionRelation(o2mRelation, { reference: true });
 
 			expect(result.collection).toBe(v('directus_users'));
-			expect(result.schema!.table).toBe(v('directus_users'));
 			expect(result.meta!.many_collection).toBe(v('directus_users'));
 
+			expect(result.schema!.table).toBe(v('articles'));
+
 			expect(result.field).toBe(v('article_id'));
-			expect(result.schema!.column).toBe(v('article_id'));
+			expect(result.schema!.column).toBe(v('o2m'));
 			expect(result.meta!.many_field).toBe(v('article_id'));
 
+			// related side
 			expect(result.related_collection).toBe(v('articles'));
-			expect(result.schema!.foreign_key_table).toBe(v('articles'));
+			expect(result.schema!.foreign_key_table).toBe(v('directus_users'));
 			expect(result.schema!.foreign_key_column).toBe('directus_version_id');
 			expect(result.meta!.one_collection).toBe(v('articles'));
-			expect(result.meta!.one_field).toBe(v('o2m'));
+			expect(result.meta!.one_field).toBe('o2m');
 		});
 
 		test('removes meta.id', () => {
@@ -101,13 +103,13 @@ describe('toVersionRelation', () => {
 			expect(result.meta).not.toHaveProperty('id');
 		});
 
-		test('does not version anything without reference', () => {
+		test('does not version anything without reference (O2M detected)', () => {
 			const result = toVersionRelation(o2mRelation);
 
 			expect(result.collection).toBe('directus_users');
 			expect(result.related_collection).toBe('articles');
 			expect(result.field).toBe('article_id');
-			expect(result.schema!.table).toBe('directus_users');
+			expect(result.schema!.table).toBe('articles');
 		});
 	});
 
@@ -149,12 +151,12 @@ describe('toVersionRelation', () => {
 
 			// Collection/junction side
 			expect(result.collection).toBe(v('articles_directus_users_junction'));
-			expect(result.schema!.table).toBe(v('articles_directus_users_junction'));
+			expect(result.schema!.table).toBe(v('articles'));
 			expect(result.meta!.many_collection).toBe(v('articles_directus_users_junction'));
 
 			// Related side
 			expect(result.related_collection).toBe(v('articles'));
-			expect(result.schema!.foreign_key_table).toBe(v('articles'));
+			expect(result.schema!.foreign_key_table).toBe(v('articles_directus_users_junction'));
 			expect(result.schema!.foreign_key_column).toBe('directus_version_id');
 			expect(result.meta!.one_collection).toBe(v('articles'));
 		});
@@ -163,15 +165,15 @@ describe('toVersionRelation', () => {
 			const result = toVersionRelation(m2mLeftRelation, { reference: true });
 
 			expect(result.field).toBe(v('articles_id'));
-			expect(result.schema!.column).toBe(v('articles_id'));
+			expect(result.schema!.column).toBe(v('m2m'));
 			expect(result.meta!.many_field).toBe(v('articles_id'));
 			expect(result.meta!.junction_field).toBe(v('directus_users_id'));
 		});
 
-		test('versions one_field alias', () => {
+		test('keeps original one_field alias name (aliases have no column conflict)', () => {
 			const result = toVersionRelation(m2mLeftRelation, { reference: true });
 
-			expect(result.meta!.one_field).toBe(v('m2m'));
+			expect(result.meta!.one_field).toBe('m2m');
 		});
 	});
 
@@ -236,12 +238,12 @@ describe('toVersionRelation', () => {
 
 			// Collection/junction side
 			expect(result.collection).toBe(v('articles_builder'));
-			expect(result.schema!.table).toBe(v('articles_builder'));
+			expect(result.schema!.table).toBe(v('articles'));
 			expect(result.meta!.many_collection).toBe(v('articles_builder'));
 
 			// Related side
 			expect(result.related_collection).toBe(v('articles'));
-			expect(result.schema!.foreign_key_table).toBe(v('articles'));
+			expect(result.schema!.foreign_key_table).toBe(v('articles_builder'));
 			expect(result.schema!.foreign_key_column).toBe('directus_version_id');
 			expect(result.meta!.one_collection).toBe(v('articles'));
 		});
@@ -250,15 +252,15 @@ describe('toVersionRelation', () => {
 			const result = toVersionRelation(m2aFkRelation, { reference: true });
 
 			expect(result.field).toBe(v('articles_id'));
-			expect(result.schema!.column).toBe(v('articles_id'));
+			expect(result.schema!.column).toBe(v('m2a'));
 			expect(result.meta!.many_field).toBe(v('articles_id'));
 			expect(result.meta!.junction_field).toBe(v('item'));
 		});
 
-		test('versions one_field alias', () => {
+		test('keeps original one_field alias name (aliases have no column conflict)', () => {
 			const result = toVersionRelation(m2aFkRelation, { reference: true });
 
-			expect(result.meta!.one_field).toBe(v('m2a'));
+			expect(result.meta!.one_field).toBe('m2a');
 		});
 
 		test('only versions collection side without reference', () => {
@@ -267,7 +269,7 @@ describe('toVersionRelation', () => {
 			expect(result.collection).toBe(v('articles_builder'));
 			expect(result.related_collection).toBe('articles');
 			expect(result.field).toBe('articles_id');
-			expect(result.schema!.foreign_key_table).toBe('articles');
+			expect(result.schema!.foreign_key_table).toBe('articles_builder');
 		});
 	});
 });
