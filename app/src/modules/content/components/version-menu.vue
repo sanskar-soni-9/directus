@@ -365,19 +365,6 @@ function hasVersionEdits(version: ContentVersionMaybeNew | null) {
 				<template v-if="currentVersion !== null">
 					<VDivider />
 
-					<VListItem
-						v-if="primaryKey === '+' ? createAllowed : updateAllowed"
-						:disabled="isCurrentVersionNew"
-						clickable
-						@click="$emit('publish')"
-					>
-						<VListItemIcon>
-							<VIcon name="arrow_upload_progress" />
-						</VListItemIcon>
-
-						<VListItemContent>{{ $t('publish_version') }}</VListItemContent>
-					</VListItem>
-
 					<VListItem v-if="updateVersionsAllowed && !isCurrentVersionGlobal" clickable @click="openRenameDialog">
 						<VListItemIcon>
 							<VIcon name="edit" />

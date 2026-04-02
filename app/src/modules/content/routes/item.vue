@@ -41,7 +41,7 @@ import { useVisualEditing } from '@/composables/use-visual-editing';
 import { BREAKPOINTS } from '@/constants';
 import { sameOrigin } from '@/modules/visual/utils/same-origin';
 import { useUserStore } from '@/stores/user';
-import type { ContentVersionWithType } from '@/types/versions';
+import type { ContentVersionMaybeNew, ContentVersionWithType } from '@/types/versions';
 import { getDefaultValuesFromFields } from '@/utils/get-default-values-from-fields';
 import { getCollectionRoute, getItemRoute } from '@/utils/get-route';
 import { mergeItemData } from '@/utils/merge-item-data';
@@ -79,6 +79,8 @@ const router = useRouter();
 const { collectionRoute, backRoute } = useItemNavigation();
 
 const userStore = useUserStore();
+
+const isCurrentVersionNew = computed(() => isVersionNew(currentVersion.value));
 
 const form = ref<ComponentPublicInstance>();
 
@@ -239,6 +241,26 @@ useShortcut(
 	() => {
 		if (!isPublishedItem.value) {
 			saveVersionAction(VERSION_KEY_PUBLISHED);
+		}
+	},
+	form,
+);
+
+useShortcut(
+	'meta+shift+p',
+	() => {
+		if (!isPublishedItem.value && !isCurrentVersionNew.value) {
+			onVersionPublishCompare();
+		}
+	},
+	form,
+);
+
+useShortcut(
+	'meta+alt+p',
+	() => {
+		if (!isPublishedItem.value && !isCurrentVersionNew.value) {
+			onVersionPublishCompare(true);
 		}
 	},
 	form,
@@ -658,13 +680,16 @@ function useItemNavigation() {
 
 function usePublishComparison() {
 	const comparisonModalActive = ref(false);
+	const quitAfterPublish = ref(false);
 
 	const comparableVersion = computed(() => {
 		if (currentVersion.value === null || currentVersion.value.id === '+') return null;
 		return currentVersion.value as ContentVersionWithType;
 	});
 
-	async function onVersionPublishCompare() {
+	async function onVersionPublishCompare(quit = false) {
+		quitAfterPublish.value = quit;
+
 		if (isNew.value && currentVersion.value !== null && currentVersion.value.id !== '+') {
 			const defaultValues = getDefaultValuesFromFields(fields);
 			const payloadToValidate = mergeItemData(defaultValues.value, item.value ?? {}, edits.value);
@@ -681,11 +706,17 @@ function usePublishComparison() {
 				const newItemKey = await publishVersion(versionId, {});
 
 				if (newItemKey) {
-					router.replace(getItemRoute(props.collection, newItemKey));
-					deleteVersion(versionId);
+					if (quit) {
+						router.push(collectionRoute.value);
+					} else {
+						router.replace(getItemRoute(props.collection, newItemKey));
+						deleteVersion(versionId);
+					}
 				}
 			} catch {
 				// publishVersion / deleteVersion handle unexpected errors
+			} finally {
+				quitAfterPublish.value = false;
 			}
 
 			return;
@@ -722,17 +753,28 @@ function usePublishComparison() {
 			}
 
 			if (opts.deleteOnPublish) await deleteVersion(opts.versionId);
-			currentVersion.value = null;
-			refresh();
-			revisionsSidebarDetailRef.value?.refresh?.();
+
+			if (quitAfterPublish.value) {
+				router.push(collectionRoute.value);
+			} else {
+				currentVersion.value = null;
+				refresh();
+				revisionsSidebarDetailRef.value?.refresh?.();
+			}
 		} catch {
 			// publishVersion / deleteVersion handle unexpected errors
 		} finally {
 			comparisonModalActive.value = false;
+			quitAfterPublish.value = false;
 		}
 	}
 
-	return { comparisonModalActive, comparableVersion, onVersionPublishCompare, onVersionPublishConfirm };
+	return {
+		comparisonModalActive,
+		comparableVersion,
+		onVersionPublishCompare,
+		onVersionPublishConfirm,
+	};
 }
 
 function editPublishedVersion() {
@@ -741,6 +783,10 @@ function editPublishedVersion() {
 	if (draftVersion) {
 		currentVersion.value = draftVersion;
 	}
+}
+
+function isVersionNew(version: ContentVersionMaybeNew | null) {
+	return version?.id === '+';
 }
 </script>
 
@@ -901,46 +947,50 @@ function editPublishedVersion() {
 				<VButton v-if="isPublishedItem" rounded icon :tooltip="$t('edit_item')" small @click="editPublishedVersion">
 					<VIcon name="edit" small />
 				</VButton>
-				<VButton
-					v-else
-					rounded
-					icon
-					:tooltip="$t('save_version')"
-					:loading="saveVersionLoading"
-					:disabled="!isSavable"
-					small
-					@click="saveVersionAction('stay')"
-				>
-					<VIcon name="beenhere" small />
+				<template v-else>
+					<VButton
+						rounded
+						icon
+						secondary
+						:tooltip="$t('save_version')"
+						:loading="saveVersionLoading"
+						:disabled="!isSavable"
+						small
+						@click="saveVersionAction('stay')"
+					>
+						<VIcon name="beenhere" small />
+					</VButton>
 
-					<template #append-outer>
-						<VMenu
-							v-if="collectionInfo.meta && collectionInfo.meta.singleton !== true && isSavable === true"
-							show-arrow
-						>
-							<template #activator="{ toggle }">
-								<VIcon class="version-more-options" name="more_vert" clickable @click="toggle" />
-							</template>
+					<VButton
+						rounded
+						icon
+						small
+						:disabled="isCurrentVersionNew"
+						:tooltip="`${$t('publish_version')} [${translateShortcut(['meta', 'shift', 'p'])}]`"
+						@click="onVersionPublishCompare"
+					>
+						<VIcon name="public" small />
 
-							<VList>
-								<VListItem clickable @click="saveVersionAction(VERSION_KEY_PUBLISHED)">
-									<VListItemIcon><VIcon name="check" /></VListItemIcon>
-									<VListItemContent>{{ $t('save_and_return_to_published') }}</VListItemContent>
-									<VListItemHint>{{ translateShortcut(['meta', 'alt', 's']) }}</VListItemHint>
-								</VListItem>
-								<VListItem clickable @click="saveVersionAction('quit')">
-									<VListItemIcon><VIcon name="done_all" /></VListItemIcon>
-									<VListItemContent>{{ $t('save_and_quit') }}</VListItemContent>
-									<VListItemHint>{{ translateShortcut(['meta', 'shift', 's']) }}</VListItemHint>
-								</VListItem>
-								<VListItem clickable @click="discardAndStay">
-									<VListItemIcon><VIcon name="undo" /></VListItemIcon>
-									<VListItemContent>{{ $t('discard_all_changes') }}</VListItemContent>
-								</VListItem>
-							</VList>
-						</VMenu>
-					</template>
-				</VButton>
+						<template #append-outer>
+							<VMenu
+								v-if="collectionInfo.meta && collectionInfo.meta.singleton !== true && !isCurrentVersionNew"
+								show-arrow
+							>
+								<template #activator="{ toggle }">
+									<VIcon class="version-more-options" name="more_vert" clickable @click="toggle" />
+								</template>
+
+								<VList>
+									<VListItem clickable @click="onVersionPublishCompare(true)">
+										<VListItemIcon><VIcon name="public" /></VListItemIcon>
+										<VListItemContent>{{ $t('publish_and_quit') }}</VListItemContent>
+										<VListItemHint>{{ translateShortcut(['meta', 'alt', 'p']) }}</VListItemHint>
+									</VListItem>
+								</VList>
+							</VMenu>
+						</template>
+					</VButton>
+				</template>
 			</template>
 			<template v-else>
 				<VButton
