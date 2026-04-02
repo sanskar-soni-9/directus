@@ -90,7 +90,7 @@ const reload = () => {
 </script>
 
 <template>
-	<TooltipProvider :delay-duration="500">
+	<TooltipProvider>
 		<ThemeProvider
 			:dark-mode="darkMode"
 			:theme-light="themeLight"

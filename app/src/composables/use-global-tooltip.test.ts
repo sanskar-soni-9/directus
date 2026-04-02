@@ -31,6 +31,7 @@ describe('useGlobalTooltip', () => {
 		});
 
 		expect(state.open).toBe(false);
+		expect(state.content).not.toBe('hello');
 		vi.advanceTimersByTime(500);
 		expect(state.open).toBe(true);
 		expect(state.content).toBe('hello');
@@ -70,6 +71,26 @@ describe('useGlobalTooltip', () => {
 		expect(state.open).toBe(true);
 
 		closeTooltip();
+		expect(state.open).toBe(false);
+	});
+
+	it('updates content immediately when immediateContent is true', () => {
+		const { state, openTooltip } = useGlobalTooltip();
+
+		openTooltip(
+			{
+				content: 'hello',
+				side: 'top',
+				align: 'center',
+				inverted: false,
+				monospace: false,
+				delayDuration: 500,
+				virtualRef: null,
+			},
+			true,
+		);
+
+		expect(state.content).toBe('hello');
 		expect(state.open).toBe(false);
 	});
 

@@ -13,9 +13,13 @@
 	transition: opacity 200ms;
 	pointer-events: none;
 
-	&[data-state='delayed-open'],
+	&[data-state='delayed-open'] {
+		opacity: 1;
+	}
+
 	&[data-state='instant-open'] {
 		opacity: 1;
+		transition: none;
 	}
 
 	&.inverted {

@@ -1,6 +1,8 @@
 import type { ReferenceElement } from 'reka-ui';
 import { reactive } from 'vue';
 
+export const TOOLTIP_CONTENT_ID = 'app-tooltip-content';
+
 export interface TooltipPayload {
 	content: string;
 	side: 'top' | 'bottom' | 'left' | 'right';
@@ -11,7 +13,7 @@ export interface TooltipPayload {
 	virtualRef: ReferenceElement | null;
 }
 
-interface TooltipState extends TooltipPayload {
+interface TooltipState extends Omit<TooltipPayload, 'delayDuration'> {
 	open: boolean;
 }
 
@@ -22,14 +24,15 @@ const state = reactive<TooltipState>({
 	align: 'center',
 	inverted: false,
 	monospace: false,
-	delayDuration: 500,
 	virtualRef: null,
 });
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-function openTooltip(payload: TooltipPayload): void {
+function openTooltip(payload: TooltipPayload, immediateContent = false): void {
 	if (timer) clearTimeout(timer);
+
+	if (immediateContent) state.content = payload.content;
 
 	timer = setTimeout(() => {
 		Object.assign(state, payload);

@@ -1,5 +1,5 @@
 import type { Directive, DirectiveBinding } from 'vue';
-import { useGlobalTooltip } from '@/composables/use-global-tooltip';
+import { TOOLTIP_CONTENT_ID, useGlobalTooltip } from '@/composables/use-global-tooltip';
 
 export function isDisabled(element: HTMLElement): boolean {
 	return (
@@ -9,56 +9,65 @@ export function isDisabled(element: HTMLElement): boolean {
 	);
 }
 
-export function resolveSide(binding: DirectiveBinding): 'top' | 'bottom' | 'left' | 'right' {
-	if (binding.modifiers['bottom'] || binding.arg === 'bottom') return 'bottom';
-	if (binding.modifiers['left'] || binding.arg === 'left') return 'left';
-	if (binding.modifiers['right'] || binding.arg === 'right') return 'right';
-	return 'top';
+const SIDES = ['top', 'bottom', 'left', 'right'] as const;
+type Side = (typeof SIDES)[number];
+
+export function resolveSide(binding: DirectiveBinding): Side {
+	return SIDES.find((s) => binding.modifiers[s] || binding.arg === s) ?? 'top';
 }
 
-export function resolveAlign(binding: DirectiveBinding): 'start' | 'center' | 'end' {
-	if (binding.modifiers['start']) return 'start';
-	if (binding.modifiers['end']) return 'end';
-	return 'center';
+const ALIGNS = ['start', 'center', 'end'] as const;
+type Align = (typeof ALIGNS)[number];
+
+export function resolveAlign(binding: DirectiveBinding): Align {
+	return ALIGNS.find((a) => binding.modifiers[a]) ?? 'center';
 }
 
 interface TooltipHandlers {
 	enter: () => void;
 	leave: () => void;
+	focus: () => void;
+	blur: () => void;
 }
 
 const handlerMap = new WeakMap<HTMLElement, TooltipHandlers>();
+const { openTooltip, closeTooltip } = useGlobalTooltip();
 
 function beforeMount(element: HTMLElement, binding: DirectiveBinding): void {
 	if (!binding.value) return;
 
-	const { openTooltip, closeTooltip } = useGlobalTooltip();
 	const virtualRef = { getBoundingClientRect: () => element.getBoundingClientRect() };
 
+	const buildPayload = (delayDuration: number) => ({
+		content: binding.value,
+		side: resolveSide(binding),
+		align: resolveAlign(binding),
+		inverted: !!binding.modifiers['inverted'],
+		monospace: !!binding.modifiers['monospace'],
+		delayDuration,
+		virtualRef,
+	});
+
 	const enter = () => {
-		let delayDuration = 500;
-		if (binding.modifiers['instant']) delayDuration = 0;
-		else if (isDisabled(element)) delayDuration = 125;
-
-		openTooltip({
-			content: binding.value,
-			side: resolveSide(binding),
-			align: resolveAlign(binding),
-			inverted: !!binding.modifiers['inverted'],
-			monospace: !!binding.modifiers['monospace'],
-			delayDuration,
-			virtualRef,
-		});
+		let delay = 500;
+		if (binding.modifiers['instant']) delay = 0;
+		else if (isDisabled(element)) delay = 125;
+		openTooltip(buildPayload(delay));
 	};
 
-	const leave = () => {
-		closeTooltip();
+	const focus = () => {
+		openTooltip(buildPayload(binding.modifiers['instant'] ? 0 : 500), true);
 	};
 
-	handlerMap.set(element, { enter, leave });
+	const leave = closeTooltip;
+	const blur = closeTooltip;
+
+	handlerMap.set(element, { enter, leave, focus, blur });
 	element.addEventListener('mouseenter', enter);
 	element.addEventListener('mouseleave', leave);
-	element.setAttribute('aria-describedby', 'app-tooltip-content');
+	element.addEventListener('focus', focus);
+	element.addEventListener('blur', blur);
+	element.setAttribute('aria-describedby', TOOLTIP_CONTENT_ID);
 }
 
 function unmounted(element: HTMLElement): void {
@@ -67,9 +76,10 @@ function unmounted(element: HTMLElement): void {
 	if (handlers) {
 		element.removeEventListener('mouseenter', handlers.enter);
 		element.removeEventListener('mouseleave', handlers.leave);
+		element.removeEventListener('focus', handlers.focus);
+		element.removeEventListener('blur', handlers.blur);
 		handlerMap.delete(element);
 		element.removeAttribute('aria-describedby');
-		const { closeTooltip } = useGlobalTooltip();
 		closeTooltip();
 	}
 }

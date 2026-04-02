@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TooltipArrow, TooltipContent, TooltipPortal, TooltipRoot, TooltipTrigger } from 'reka-ui';
-import { useGlobalTooltip } from '@/composables/use-global-tooltip';
+import { TOOLTIP_CONTENT_ID, useGlobalTooltip } from '@/composables/use-global-tooltip';
 
 const { state, closeTooltip } = useGlobalTooltip();
 </script>
@@ -10,7 +10,8 @@ const { state, closeTooltip } = useGlobalTooltip();
 		<TooltipTrigger as="span" :reference="state.virtualRef" aria-hidden="true" :tabindex="-1" style="display: none" />
 		<TooltipPortal>
 			<TooltipContent
-				id="app-tooltip-content"
+				:id="TOOLTIP_CONTENT_ID"
+				force-mount
 				:side="state.side"
 				:align="state.align"
 				:side-offset="8"
