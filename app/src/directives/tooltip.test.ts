@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { isDisabled } from './tooltip';
+import type { DirectiveBinding } from 'vue';
+import { isDisabled, resolveAlign, resolveSide } from './tooltip';
 
 function createElement(html: string): HTMLElement {
 	const div = document.createElement('div');
@@ -47,5 +48,57 @@ describe('isDisabled', () => {
 			const element = createElement('<span><span><button disabled>Click</button></span></span>');
 			expect(isDisabled(element)).toBe(false);
 		});
+	});
+});
+
+function makeBinding(overrides: Partial<DirectiveBinding> = {}): DirectiveBinding {
+	return {
+		value: 'tooltip text',
+		oldValue: null,
+		arg: undefined,
+		modifiers: {},
+		instance: null,
+		dir: {} as DirectiveBinding['dir'],
+		...overrides,
+	};
+}
+
+describe('resolveSide', () => {
+	it('defaults to top', () => {
+		expect(resolveSide(makeBinding())).toBe('top');
+	});
+
+	it('returns bottom for .bottom modifier', () => {
+		expect(resolveSide(makeBinding({ modifiers: { bottom: true } }))).toBe('bottom');
+	});
+
+	it('returns left for .left modifier', () => {
+		expect(resolveSide(makeBinding({ modifiers: { left: true } }))).toBe('left');
+	});
+
+	it('returns right for .right modifier', () => {
+		expect(resolveSide(makeBinding({ modifiers: { right: true } }))).toBe('right');
+	});
+
+	it('returns top for .top modifier', () => {
+		expect(resolveSide(makeBinding({ modifiers: { top: true } }))).toBe('top');
+	});
+
+	it('uses binding.arg as fallback', () => {
+		expect(resolveSide(makeBinding({ arg: 'bottom' }))).toBe('bottom');
+	});
+});
+
+describe('resolveAlign', () => {
+	it('defaults to center', () => {
+		expect(resolveAlign(makeBinding())).toBe('center');
+	});
+
+	it('returns start for .start modifier', () => {
+		expect(resolveAlign(makeBinding({ modifiers: { start: true } }))).toBe('start');
+	});
+
+	it('returns end for .end modifier', () => {
+		expect(resolveAlign(makeBinding({ modifiers: { end: true } }))).toBe('end');
 	});
 });
