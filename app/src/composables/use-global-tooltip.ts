@@ -30,9 +30,9 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 
 function openTooltip(payload: TooltipPayload): void {
 	if (timer) clearTimeout(timer);
-	Object.assign(state, payload);
 
 	timer = setTimeout(() => {
+		Object.assign(state, payload);
 		state.open = true;
 	}, payload.delayDuration);
 }

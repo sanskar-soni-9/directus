@@ -1,11 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGlobalTooltip } from './use-global-tooltip';
 
 describe('useGlobalTooltip', () => {
 	beforeEach(() => {
+		vi.useFakeTimers();
 		const { closeTooltip } = useGlobalTooltip();
 		closeTooltip();
-		vi.useFakeTimers();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
 	});
 
 	it('starts closed', () => {
