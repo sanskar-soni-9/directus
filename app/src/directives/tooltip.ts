@@ -49,18 +49,16 @@ function beforeMount(element: HTMLElement, binding: DirectiveBinding): void {
 			delayDuration,
 			virtualRef,
 		});
-
-		element.setAttribute('aria-describedby', 'app-tooltip-content');
 	};
 
 	const leave = () => {
 		closeTooltip();
-		element.removeAttribute('aria-describedby');
 	};
 
 	handlerMap.set(element, { enter, leave });
 	element.addEventListener('mouseenter', enter);
 	element.addEventListener('mouseleave', leave);
+	element.setAttribute('aria-describedby', 'app-tooltip-content');
 }
 
 function unmounted(element: HTMLElement): void {
@@ -70,17 +68,17 @@ function unmounted(element: HTMLElement): void {
 		element.removeEventListener('mouseenter', handlers.enter);
 		element.removeEventListener('mouseleave', handlers.leave);
 		handlerMap.delete(element);
+		element.removeAttribute('aria-describedby');
+		const { closeTooltip } = useGlobalTooltip();
+		closeTooltip();
 	}
-
-	element.removeAttribute('aria-describedby');
-	const { closeTooltip } = useGlobalTooltip();
-	closeTooltip();
 }
 
 const Tooltip: Directive = {
 	beforeMount,
 	unmounted,
 	updated(element, binding) {
+		if (binding.value === binding.oldValue) return;
 		unmounted(element);
 
 		if (binding.value) {
