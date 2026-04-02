@@ -266,14 +266,46 @@ router.get(
 		res.attachment(filename);
 		res.setHeader('Content-Type', file.type);
 		res.setHeader('Accept-Ranges', 'bytes');
-		res.setHeader('Cache-Control', getCacheControlHeader(req, getMilliseconds(env['ASSETS_CACHE_TTL']), false, true));
+
+		const revalidate = env['ASSETS_CACHE_REVALIDATE'] === true;
+
+		if (revalidate) {
+			res.setHeader('Cache-Control', 'max-age=0, must-revalidate');
+		} else {
+			res.setHeader('Cache-Control', getCacheControlHeader(req, getMilliseconds(env['ASSETS_CACHE_TTL']), false, true));
+		}
+
 		res.setHeader('Vary', vary.join(', '));
 
 		const unixTime = Date.parse(file.modified_on);
+		let lastModifiedDate: Date | undefined;
 
 		if (!Number.isNaN(unixTime)) {
-			const lastModifiedDate = new Date(unixTime);
+			lastModifiedDate = new Date(unixTime);
 			res.setHeader('Last-Modified', lastModifiedDate.toUTCString());
+
+			const etag = `"${Math.floor(unixTime / 1000)}"`;
+			res.setHeader('ETag', etag);
+
+			if (revalidate) {
+				const ifNoneMatch = req.headers['if-none-match'];
+				const ifModifiedSince = req.headers['if-modified-since'];
+
+				if (ifNoneMatch === etag) {
+					res.status(304);
+					return res.end();
+				}
+
+				if (ifModifiedSince) {
+					const ifModifiedSinceDate = new Date(ifModifiedSince);
+
+					// Truncate to seconds since HTTP dates don't have millisecond precision
+					if (Math.floor(lastModifiedDate.getTime() / 1000) <= Math.floor(ifModifiedSinceDate.getTime() / 1000)) {
+						res.status(304);
+						return res.end();
+					}
+				}
+			}
 		}
 
 		if (range) {

@@ -166,6 +166,10 @@ CACHE_STORE=memory
 # How long assets will be cached for in the browser. Sets the max-age value of the Cache-Control header ["30d"]
 ASSETS_CACHE_TTL="30d"
 
+# When enabled, assets use Cache-Control: max-age=0, must-revalidate instead of max-age. CDNs will revalidate via
+# If-Modified-Since / ETag on every request, ensuring replaced files are served immediately [false]
+ASSETS_CACHE_REVALIDATE=false
+
 ####################################################################################################
 ### File Storage
 
