@@ -156,7 +156,7 @@ const {
 } = useCollab(collection, primaryKey, currentVersion, item, edits, getItem);
 
 const validationErrors = computed(() => {
-	if (currentVersion.value === null) return itemValidationErrors.value;
+	if (isPublishedItem.value) return itemValidationErrors.value;
 	return versionValidationErrors.value;
 });
 
@@ -213,7 +213,7 @@ const archiveTooltip = computed(() => {
 useShortcut(
 	'meta+s',
 	() => {
-		if (unref(currentVersion) === null) {
+		if (isPublishedItem.value) {
 			saveAndStay();
 		} else {
 			saveVersionAction('stay');
@@ -225,7 +225,7 @@ useShortcut(
 useShortcut(
 	'meta+shift+s',
 	() => {
-		if (unref(currentVersion) === null) {
+		if (isPublishedItem.value) {
 			saveAndAddNew();
 		} else {
 			saveVersionAction('quit');
@@ -237,7 +237,7 @@ useShortcut(
 useShortcut(
 	'meta+alt+s',
 	() => {
-		if (unref(currentVersion) !== null) {
+		if (!isPublishedItem.value) {
 			saveVersionAction(VERSION_KEY_PUBLISHED);
 		}
 	},
@@ -245,7 +245,7 @@ useShortcut(
 );
 
 const isSavable = computed(() => {
-	if (saveAllowed.value === false && currentVersion.value === null) return false;
+	if (saveAllowed.value === false && isPublishedItem.value) return false;
 	if (hasEdits.value === true) return true;
 
 	if (
@@ -256,7 +256,7 @@ const isSavable = computed(() => {
 		return !!edits.value?.[primaryKeyField.value.field];
 	}
 
-	if (isNew.value && currentVersion.value === null) {
+	if (isNew.value && isPublishedItem.value) {
 		return Object.keys(defaults.value).length > 0 || hasEdits.value;
 	}
 
@@ -272,7 +272,7 @@ const { updateAllowed: updateVersionsAllowed } = useItemPermissions(
 const isFormDisabled = computed(() => {
 	if (isNew.value) return false;
 	if (updateAllowed.value) return false;
-	if (currentVersion.value !== null && updateVersionsAllowed.value) return false;
+	if (!isPublishedItem.value && updateVersionsAllowed.value) return false;
 	return true;
 });
 
@@ -531,7 +531,7 @@ async function saveAndStay() {
 
 async function saveAndAddNew() {
 	if (isSavable.value === false) return;
-	if (unref(currentVersion) !== null) return;
+	if (!isPublishedItem.value) return;
 
 	try {
 		await save();
@@ -826,7 +826,7 @@ function editPublishedVersion() {
 			</VButton>
 
 			<VDialog
-				v-if="!isNew && currentVersion === null"
+				v-if="!isNew && isPublishedItem"
 				v-model="confirmDelete"
 				:disabled="deleteAllowed === false"
 				@esc="confirmDelete = false"
@@ -863,7 +863,7 @@ function editPublishedVersion() {
 			</VDialog>
 
 			<VDialog
-				v-if="collectionInfo.meta && collectionInfo.meta.archive_field && !isNew && currentVersion === null"
+				v-if="collectionInfo.meta && collectionInfo.meta.archive_field && !isNew && isPublishedItem"
 				v-model="confirmArchive"
 				:disabled="archiveAllowed === false"
 				@esc="confirmArchive = false"
@@ -944,7 +944,7 @@ function editPublishedVersion() {
 			</template>
 			<template v-else>
 				<VButton
-					v-if="currentVersion === null"
+					v-if="isPublishedItem"
 					rounded
 					icon
 					:tooltip="saveAllowed ? $t('save') : $t('not_allowed')"
@@ -1105,18 +1105,14 @@ function editPublishedVersion() {
 					:scope="accountabilityScope"
 					@revert="revert"
 				/>
-				<CommentsSidebarDetail
-					v-if="currentVersion === null"
-					:collection="collection"
-					:primary-key="actualPrimaryKey"
-				/>
+				<CommentsSidebarDetail v-if="isPublishedItem" :collection="collection" :primary-key="actualPrimaryKey" />
 				<SharesSidebarDetail
-					v-if="currentVersion === null"
+					v-if="isPublishedItem"
 					:collection="collection"
 					:primary-key="actualPrimaryKey"
 					:allowed="shareAllowed"
 				/>
-				<FlowSidebarDetail v-if="currentVersion === null" :manual-flows />
+				<FlowSidebarDetail v-if="isPublishedItem" :manual-flows />
 			</template>
 		</template>
 	</PrivateView>
