@@ -194,10 +194,8 @@ export function useTranslationJob(options: {
 		const fieldOrder =
 			jobShared?.selectedFieldDefinitions.map((field) => field.field) ?? jobConfig?.selectedFields ?? [];
 
-		fieldProgressByLang.value = {
-			...fieldProgressByLang.value,
-			[langCode]: createFieldProgress(fieldOrder),
-		};
+		fieldProgressByLang.value[langCode] = createFieldProgress(fieldOrder);
+		fieldProgressByLang.value = { ...fieldProgressByLang.value };
 
 		jobState.value = 'translating';
 
@@ -292,6 +290,14 @@ export function useTranslationJob(options: {
 			const appliedFields = new Set<string>();
 			const streamedFieldValues = new Map<string, string>();
 
+			function applyField(key: string, value: string) {
+				if (streamedFieldValues.get(key) === value) return;
+
+				const normalized = normalizeAiTranslatedFields({ [key]: value }, selectedFieldDefinitions);
+				options.applyTranslatedFields(normalized, langCode);
+				streamedFieldValues.set(key, value);
+			}
+
 			while (true) {
 				if (cancelled.value || runId !== currentRunId) {
 					reader.cancel();
@@ -311,30 +317,15 @@ export function useTranslationJob(options: {
 						const completedKeys = receivedKeys.slice(0, -1);
 						const activeKey = receivedKeys[receivedKeys.length - 1];
 
-						// Apply completed fields progressively (all except the last one, which may still be streaming)
 						for (const key of completedKeys) {
 							if (!appliedFields.has(key) && typeof obj[key] === 'string') {
-								const normalized = normalizeAiTranslatedFields({ [key]: obj[key] as string }, selectedFieldDefinitions);
-
-								options.applyTranslatedFields(normalized, langCode);
-								streamedFieldValues.set(key, obj[key] as string);
+								applyField(key, obj[key] as string);
 								appliedFields.add(key);
 							}
 						}
 
-						// Update the currently streaming field as the partial JSON grows.
-						if (
-							activeKey &&
-							typeof obj[activeKey] === 'string' &&
-							streamedFieldValues.get(activeKey) !== obj[activeKey]
-						) {
-							const normalized = normalizeAiTranslatedFields(
-								{ [activeKey]: obj[activeKey] as string },
-								selectedFieldDefinitions,
-							);
-
-							options.applyTranslatedFields(normalized, langCode);
-							streamedFieldValues.set(activeKey, obj[activeKey] as string);
+						if (activeKey && typeof obj[activeKey] === 'string') {
+							applyField(activeKey, obj[activeKey] as string);
 						}
 
 						if (completedKeys.length > 0) {
@@ -344,18 +335,14 @@ export function useTranslationJob(options: {
 				}
 
 				if (done) {
-					// Apply the final field
 					const { value: finalObject } = await parsePartialJson(jsonText);
 
 					if (finalObject && typeof finalObject === 'object' && !Array.isArray(finalObject)) {
 						const obj = finalObject as Record<string, string>;
 
 						for (const key of Object.keys(obj)) {
-							if (typeof obj[key] === 'string' && streamedFieldValues.get(key) !== obj[key]) {
-								const normalized = normalizeAiTranslatedFields({ [key]: obj[key] as string }, selectedFieldDefinitions);
-
-								options.applyTranslatedFields(normalized, langCode);
-								streamedFieldValues.set(key, obj[key] as string);
+							if (typeof obj[key] === 'string') {
+								applyField(key, obj[key] as string);
 							}
 
 							appliedFields.add(key);
@@ -419,15 +406,12 @@ export function useTranslationJob(options: {
 		const remainingFields = progress.fieldOrder.filter((field) => !completedSet.has(field));
 		const activeField = remainingFields[0] ?? null;
 
-		fieldProgressByLang.value = {
-			...fieldProgressByLang.value,
-			[langCode]: {
-				...progress,
-				activeField,
-				queuedFields: activeField ? remainingFields.slice(1) : [],
-				completedFields,
-			},
-		};
+		progress.activeField = activeField;
+		progress.queuedFields = activeField ? remainingFields.slice(1) : [];
+		progress.completedFields = completedFields;
+
+		// Trigger reactivity
+		fieldProgressByLang.value = { ...fieldProgressByLang.value };
 	}
 
 	function clearPendingFields(langCode: string) {
@@ -435,14 +419,10 @@ export function useTranslationJob(options: {
 
 		if (!progress) return;
 
-		fieldProgressByLang.value = {
-			...fieldProgressByLang.value,
-			[langCode]: {
-				...progress,
-				activeField: null,
-				queuedFields: [],
-			},
-		};
+		progress.activeField = null;
+		progress.queuedFields = [];
+
+		fieldProgressByLang.value = { ...fieldProgressByLang.value };
 	}
 
 	function getFieldProgress(langCode: string | undefined): LangFieldProgress {

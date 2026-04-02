@@ -67,17 +67,18 @@ export function getAvailableModels(settings: AIModelSettings | null | undefined)
 		}
 	}
 
+	const resultKeys = new Set(result.map((m) => getModelKey(m)));
+
 	for (const [provider, allowedModels] of Object.entries(allowedModelsMap)) {
 		if (!allowedModels || allowedModels.length === 0) continue;
 		if (!availableProviders.includes(provider as StandardProviderType)) continue;
 
 		for (const modelId of allowedModels) {
-			const exists = result.some((modelDefinition) => {
-				return modelDefinition.provider === provider && modelDefinition.model === modelId;
-			});
+			const key = `${provider}:${modelId}`;
 
-			if (!exists) {
+			if (!resultKeys.has(key)) {
 				result.push(buildCustomModelDefinition(provider as StandardProviderType, modelId));
+				resultKeys.add(key);
 			}
 		}
 	}

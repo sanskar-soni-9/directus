@@ -429,26 +429,25 @@ const statusTargetLanguages = computed(() =>
 function getFieldStatus(fieldName: string): 'active' | 'queued' | 'done' | 'idle' {
 	const langCodes = statusTargetLanguages.value.map((lang) => lang.value);
 
-	if (langCodes.some((langCode) => job.getActiveField?.(langCode) === fieldName)) return 'active';
+	if (langCodes.some((langCode) => job.getActiveField(langCode) === fieldName)) return 'active';
 
 	if (
 		langCodes.length > 0 &&
 		langCodes.every((langCode) => {
-			const completedFields = job.getCompletedFields?.(langCode) ?? [];
+			const completedFields = job.getCompletedFields(langCode);
 			return completedFields.includes(fieldName) || job.langStatuses.value[langCode]?.status === 'done';
 		})
 	) {
 		return 'done';
 	}
 
-	if (langCodes.some((langCode) => (job.getQueuedFields?.(langCode) ?? []).includes(fieldName))) return 'queued';
+	if (langCodes.some((langCode) => job.getQueuedFields(langCode).includes(fieldName))) return 'queued';
 
 	return 'idle';
 }
 
 function getLanguageProgressCount(langCode: string) {
-	const completedFields = job.getCompletedFields?.(langCode) ?? [];
-	return completedFields.length;
+	return job.getCompletedFields(langCode).length;
 }
 
 function getLanguageProgressValue(langCode: string) {
