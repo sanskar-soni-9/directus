@@ -1,4 +1,4 @@
-import type { ReferenceElement } from '@floating-ui/vue';
+import type { ReferenceElement } from 'reka-ui';
 import { reactive } from 'vue';
 
 export interface TooltipPayload {
