@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TooltipContent, TooltipPortal, TooltipRoot, TooltipTrigger } from 'reka-ui';
+import { TooltipArrow, TooltipContent, TooltipPortal, TooltipRoot, TooltipTrigger } from 'reka-ui';
 import { useGlobalTooltip } from '@/composables/use-global-tooltip';
 
 const { state, closeTooltip } = useGlobalTooltip();
@@ -18,6 +18,7 @@ const { state, closeTooltip } = useGlobalTooltip();
 				:class="{ inverted: state.inverted, monospace: state.monospace }"
 			>
 				{{ state.content }}
+				<TooltipArrow />
 			</TooltipContent>
 		</TooltipPortal>
 	</TooltipRoot>
