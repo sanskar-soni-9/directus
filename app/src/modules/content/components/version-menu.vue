@@ -43,7 +43,6 @@ const emit = defineEmits<{
 	update: [updates: { key: string; name?: string | null }];
 	delete: [versionId: PrimaryKey];
 	switch: [version: ContentVersionMaybeNew | null];
-	publish: [];
 }>();
 
 const { collection, primaryKey, hasEdits, currentVersion, versions, deleteVersionLoading } = toRefs(props);

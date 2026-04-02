@@ -845,7 +845,6 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 					@update="updateVersion"
 					@delete="deleteVersion"
 					@switch="currentVersion = $event"
-					@publish="onVersionPublishCompare"
 				/>
 			</div>
 		</template>
