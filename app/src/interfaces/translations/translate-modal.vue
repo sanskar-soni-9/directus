@@ -232,7 +232,15 @@ watch(
 	() => props.translationJob.jobState.value,
 	(state) => {
 		if (state !== 'complete') return;
-		if (props.translationJob.hasErrors.value) return;
+
+		if (props.translationJob.hasErrors.value) {
+			notify({
+				title: t('interfaces.translations.translation_has_errors'),
+				type: 'error',
+			});
+
+			return;
+		}
 
 		const hasWarnings = Object.values(props.translationJob.langStatuses.value).some((s) => s.warning);
 
@@ -877,7 +885,7 @@ function useTargetPermissions() {
 
 			<!-- State 2: Active or failed translation job -->
 			<template v-if="modalState === 'status'">
-				<p class="translating-title">
+				<p v-if="job.jobState.value !== 'complete'" class="translating-title">
 					{{
 						t('interfaces.translations.ai_translating_progress', {
 							done: job.completedCount.value,
@@ -885,6 +893,16 @@ function useTargetPermissions() {
 						})
 					}}
 				</p>
+
+				<VNotice v-for="langCode in errorLanguages" :key="'err-' + langCode" type="danger" class="error-notice">
+					<div class="error-notice-content">
+						<span>
+							{{ languageOptionsByCode.get(langCode)?.text }}:
+							{{ job.langStatuses.value[langCode]?.error }}
+						</span>
+						<VButton x-small secondary @click="retryLanguage(langCode)">{{ $t('retry') }}</VButton>
+					</div>
+				</VNotice>
 
 				<div class="section">
 					<div class="section-header">
@@ -953,16 +971,6 @@ function useTargetPermissions() {
 					</div>
 				</div>
 
-				<VNotice v-for="langCode in errorLanguages" :key="'err-' + langCode" type="danger" class="error-notice">
-					<div class="error-notice-content">
-						<span>
-							{{ languageOptionsByCode.get(langCode)?.text }}:
-							{{ job.langStatuses.value[langCode]?.error }}
-						</span>
-						<VButton x-small secondary @click="retryLanguage(langCode)">{{ $t('retry') }}</VButton>
-					</div>
-				</VNotice>
-
 				<VButton class="translate-button" secondary full-width @click="cancelJob">
 					{{ $t('cancel') }}
 				</VButton>
@@ -977,12 +985,11 @@ function useTargetPermissions() {
 }
 
 .content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--theme--form--row-gap);
 	padding: var(--content-padding);
 	padding-block-end: var(--content-padding-bottom);
-}
-
-.section + .section {
-	margin-block-start: 1.5rem;
 }
 
 .section-header {
@@ -1122,10 +1129,10 @@ function useTargetPermissions() {
 .status-dot {
 	inline-size: 0.4375rem;
 	block-size: 0.4375rem;
-	border-radius: 999px;
+	border-radius: 50%;
 	flex-shrink: 0;
 	background-color: transparent;
-	border: 1px solid color-mix(in srgb, var(--theme--foreground-subdued) 55%, transparent);
+	border: var(--theme--border-width) solid color-mix(in srgb, var(--theme--foreground-subdued) 55%, transparent);
 	transition:
 		background-color var(--fast) var(--transition),
 		border-color var(--fast) var(--transition);
@@ -1236,17 +1243,8 @@ function useTargetPermissions() {
 	padding-inline-start: 1.75rem;
 }
 
-.translate-button {
-	margin-block-start: 1.5rem;
-}
-
 .translating-title {
 	font-weight: 600;
-	margin-block-end: 1rem;
-}
-
-.error-notice {
-	margin-block-end: 0.5rem;
 }
 
 .error-notice-content {

@@ -122,3 +122,16 @@ export function getProviderLabel(provider: ProviderType): string {
 			return 'Custom';
 	}
 }
+
+export function getProviderIcon(provider: ProviderType): string {
+	switch (provider) {
+		case 'openai':
+			return 'logo_openai';
+		case 'anthropic':
+			return 'logo_anthropic';
+		case 'google':
+			return 'logo_google';
+		case 'openai-compatible':
+			return 'logo_custom_provider';
+	}
+}

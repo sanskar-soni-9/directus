@@ -208,7 +208,7 @@ export function useTranslationJob(options: {
 		// Check if all done after retry
 		const allDone = Object.values(langStatuses.value).every((s) => s.status === 'done' || s.status === 'error');
 
-		if (allDone && !Object.values(langStatuses.value).some((s) => s.status === 'error')) {
+		if (allDone) {
 			jobState.value = 'complete';
 		}
 	}
@@ -369,6 +369,17 @@ export function useTranslationJob(options: {
 			abortControllers.delete(langCode);
 
 			if (cancelled.value || runId !== currentRunId) return;
+
+			if (jsonText.length === 0) {
+				clearPendingFields(langCode);
+
+				langStatuses.value[langCode] = {
+					status: 'error',
+					error: t('interfaces.translations.translation_error'),
+				};
+
+				return;
+			}
 
 			const expectedFieldCount = selectedFieldDefinitions.length;
 

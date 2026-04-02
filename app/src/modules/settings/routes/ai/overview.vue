@@ -5,7 +5,7 @@ import { clone } from 'lodash';
 import { computed, ref, unref } from 'vue';
 import { useRouter } from 'vue-router';
 import SettingsNavigation from '../../components/navigation.vue';
-import { getAvailableModels, getModelKey, getProviderLabel } from '@/ai/utils/available-models';
+import { getAvailableModels, getModelKey, getProviderIcon } from '@/ai/utils/available-models';
 import VBreadcrumb from '@/components/v-breadcrumb.vue';
 import VButton from '@/components/v-button.vue';
 import VCardActions from '@/components/v-card-actions.vue';
@@ -52,8 +52,9 @@ const aiFields = computed(() =>
 						...(field.meta?.options ?? {}),
 						allowNone: true,
 						choices: availableTranslationModels.value.map((modelDefinition) => ({
-							text: `${getProviderLabel(modelDefinition.provider)} · ${modelDefinition.name}`,
+							text: modelDefinition.name,
 							value: getModelKey(modelDefinition),
+							icon: getProviderIcon(modelDefinition.provider),
 						})),
 					},
 				},
