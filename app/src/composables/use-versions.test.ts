@@ -256,10 +256,10 @@ describe('useVersions', () => {
 		});
 	});
 
-	describe('isPublishedVersion', () => {
+	describe('isPublishedItem', () => {
 		it('should be true when no version is selected (published view)', () => {
-			const { isPublishedVersion } = useVersions(ref('test_collection'), ref(false), ref('1'));
-			expect(isPublishedVersion.value).toBe(true);
+			const { isPublishedItem } = useVersions(ref('test_collection'), ref(false), ref('1'));
+			expect(isPublishedItem.value).toBe(true);
 		});
 
 		it('should be false when a version is selected', async () => {
@@ -279,17 +279,13 @@ describe('useVersions', () => {
 
 			vi.mocked(api.get).mockResolvedValueOnce({ data: { data: [existingDraft] } });
 
-			const { versions, currentVersion, isPublishedVersion } = useVersions(
-				ref('test_collection'),
-				ref(false),
-				ref('1'),
-			);
+			const { versions, currentVersion, isPublishedItem } = useVersions(ref('test_collection'), ref(false), ref('1'));
 
 			await vi.waitFor(() => expect(api.get).toHaveBeenCalled());
 
 			currentVersion.value = versions.value.find((v) => v.key === 'draft') ?? null;
 
-			expect(isPublishedVersion.value).toBe(false);
+			expect(isPublishedItem.value).toBe(false);
 		});
 	});
 

@@ -38,7 +38,7 @@ export function useVersions(collection: Ref<string>, isSingleton: Ref<boolean>, 
 
 	const isNewItem = computed(() => primaryKey.value === '+');
 	const isItemLessVersion = computed(() => isNewItem.value && currentVersion.value?.id !== '+');
-	const isPublishedVersion = computed(() => currentVersion.value === null);
+	const isPublishedItem = computed(() => currentVersion.value === null);
 
 	const versions = computed<ContentVersionMaybeNew[]>(() => {
 		const draftVersion = getGlobalVersion(VERSION_KEY_DRAFT);
@@ -292,6 +292,6 @@ export function useVersions(collection: Ref<string>, isSingleton: Ref<boolean>, 
 		validationErrors,
 		publishVersionLoading,
 		publishVersion,
-		isPublishedVersion,
+		isPublishedItem,
 	};
 }

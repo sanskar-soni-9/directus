@@ -107,7 +107,7 @@ const {
 	validationErrors: versionValidationErrors,
 	publishVersionLoading,
 	publishVersion,
-	isPublishedVersion,
+	isPublishedItem,
 } = useVersions(collection, isSingleton, primaryKey);
 
 const { comparisonModalActive, comparableVersion, onVersionPublishCompare, onVersionPublishConfirm } =
@@ -898,7 +898,7 @@ function editPublishedVersion() {
 				</VCard>
 			</VDialog>
 			<template v-if="shouldShowVersioning">
-				<VButton v-if="isPublishedVersion" rounded icon :tooltip="$t('edit_item')" small @click="editPublishedVersion">
+				<VButton v-if="isPublishedItem" rounded icon :tooltip="$t('edit_item')" small @click="editPublishedVersion">
 					<VIcon name="edit" small />
 				</VButton>
 				<VButton
@@ -995,11 +995,11 @@ function editPublishedVersion() {
 					ref="form"
 					v-model="edits"
 					:autofocus="isNew"
-					:disabled="isFormDisabled || (shouldShowVersioning && isPublishedVersion)"
+					:disabled="isFormDisabled || (shouldShowVersioning && isPublishedItem)"
 					:loading="loading"
 					:initial-values="item"
 					:fields="fields"
-					:non-editable="shouldShowVersioning && isPublishedVersion"
+					:non-editable="shouldShowVersioning && isPublishedItem"
 					:primary-key="internalPrimaryKey"
 					:collab-context="collabContext"
 					:validation-errors="validationErrors"
