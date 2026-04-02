@@ -71,6 +71,11 @@ const aiStore = useAiStore();
 
 const showTranslateModal = ref(false);
 
+function openTranslateDrawer() {
+	document.documentElement.dispatchEvent(new Event('click'));
+	showTranslateModal.value = true;
+}
+
 const aiTranslateAvailable = computed(() =>
 	isAiTranslateAvailable({
 		aiEnabled: serverStore.info.ai_enabled,
@@ -408,7 +413,7 @@ function useNestedValidation() {
 			v-model:lang="firstLang"
 			v-bind="translationProps"
 			:class="splitViewEnabled ? 'half' : 'full'"
-			@open-translate-drawer="showTranslateModal = true"
+			@open-translate-drawer="openTranslateDrawer"
 		>
 			<template #split-view="{ active, toggle }">
 				<VIcon
@@ -431,7 +436,7 @@ function useNestedValidation() {
 			v-bind="translationProps"
 			secondary
 			class="half"
-			@open-translate-drawer="showTranslateModal = true"
+			@open-translate-drawer="openTranslateDrawer"
 		>
 			<template #split-view>
 				<VIcon

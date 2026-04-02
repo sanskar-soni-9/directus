@@ -10,12 +10,11 @@ export type AiTranslateAvailabilityOptions = {
 	nonEditable?: boolean;
 };
 
-export type TranslationTargetPermissionReason = 'not-allowed' | 'pending-delete';
+export type TranslationTargetPermissionReason = 'not-allowed' | 'pending-delete' | 'error';
 
-export type TranslationTargetPermissionResult = {
-	allowed: boolean;
-	reason?: TranslationTargetPermissionReason;
-};
+export type TranslationTargetPermissionResult =
+	| { allowed: true }
+	| { allowed: false; reason: TranslationTargetPermissionReason };
 
 export type AiTranslationFieldBehavior = 'plain-text' | 'slug-safe' | 'markdown' | 'html';
 

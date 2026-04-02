@@ -11,6 +11,7 @@ import {
 import type { AppModelDefinition } from '@/ai/models';
 import { useSettingsStore } from '@/stores/settings';
 import { getRootPath } from '@/utils/get-root-path';
+import { unexpectedError } from '@/utils/unexpected-error';
 
 export type LangStatus = 'pending' | 'translating' | 'retrying' | 'done' | 'error';
 
@@ -18,6 +19,7 @@ export type LangStatusEntry = {
 	status: LangStatus;
 	fieldCount?: number;
 	error?: string;
+	warning?: string;
 };
 
 export type TranslationJobConfig = {
@@ -38,12 +40,12 @@ export type LangFieldProgress = {
 
 const MAX_RETRIES = 3;
 
-const EMPTY_FIELD_PROGRESS: LangFieldProgress = {
+const EMPTY_FIELD_PROGRESS: Readonly<LangFieldProgress> = Object.freeze({
 	fieldOrder: [],
 	activeField: null,
 	queuedFields: [],
 	completedFields: [],
-};
+});
 
 export function useTranslationJob(options: {
 	applyTranslatedFields: (fields: Record<string, string>, lang: string | undefined) => void;
@@ -191,6 +193,8 @@ export function useTranslationJob(options: {
 	}
 
 	async function retry(langCode: string) {
+		if (!jobConfig || !jobShared) return;
+
 		const fieldOrder =
 			jobShared?.selectedFieldDefinitions.map((field) => field.field) ?? jobConfig?.selectedFields ?? [];
 
@@ -251,8 +255,10 @@ export function useTranslationJob(options: {
 
 				if (cancelled.value || runId !== currentRunId) return;
 
-				// Rate limit — auto-retry with exponential backoff
-				if (statusCode === 429 && retryCount < MAX_RETRIES) {
+				// Transient errors — auto-retry with exponential backoff
+				const isRetryable = statusCode === 429 || statusCode === 502 || statusCode === 503 || statusCode === 504;
+
+				if (isRetryable && retryCount < MAX_RETRIES) {
 					const delay = Math.pow(2, retryCount) * 1000;
 					langStatuses.value[langCode] = { status: 'retrying' };
 					await new Promise((resolve) => setTimeout(resolve, delay));
@@ -264,13 +270,18 @@ export function useTranslationJob(options: {
 					return;
 				}
 
-				let errorMessage = t('interfaces.translations.translation_error');
+				let errorMessage =
+					statusCode === 429
+						? t('interfaces.translations.rate_limited')
+						: t('interfaces.translations.translation_error');
 
 				try {
 					const errorBody = await response.json();
 					errorMessage = errorBody?.errors?.[0]?.message ?? errorMessage;
-				} catch {
-					// ignore parse errors
+				} catch (parseError) {
+					if (!(parseError instanceof SyntaxError)) {
+						unexpectedError(parseError);
+					}
 				}
 
 				clearPendingFields(langCode);
@@ -282,7 +293,7 @@ export function useTranslationJob(options: {
 			const reader = response.body?.getReader();
 
 			if (!reader) {
-				throw new Error('No response body');
+				throw new Error(t('interfaces.translations.translation_error'));
 			}
 
 			const decoder = new TextDecoder();
@@ -359,9 +370,19 @@ export function useTranslationJob(options: {
 
 			if (cancelled.value || runId !== currentRunId) return;
 
+			const expectedFieldCount = selectedFieldDefinitions.length;
+
 			langStatuses.value[langCode] = {
 				status: 'done',
 				fieldCount: appliedFields.size,
+				...(appliedFields.size < expectedFieldCount
+					? {
+							warning: t('interfaces.translations.partial_translation', {
+								count: appliedFields.size,
+								total: expectedFieldCount,
+							}),
+						}
+					: {}),
 			};
 		} catch (error: any) {
 			abortControllers.delete(langCode);
@@ -369,6 +390,8 @@ export function useTranslationJob(options: {
 
 			if (cancelled.value || runId !== currentRunId) return;
 			if (error?.name === 'AbortError') return;
+
+			unexpectedError(error);
 
 			const errorMessage = error?.message ?? t('interfaces.translations.translation_error');
 

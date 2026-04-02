@@ -14,6 +14,7 @@ vi.mock('@vueuse/core', () => ({
 }));
 
 vi.mock('vue-i18n', () => ({
+	createI18n: () => ({ global: { t: (key: string) => key } }),
 	useI18n: () => ({
 		t: (key: string) => key,
 	}),
@@ -21,6 +22,10 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/utils/get-root-path', () => ({
 	getRootPath: () => '/',
+}));
+
+vi.mock('@/utils/unexpected-error', () => ({
+	unexpectedError: vi.fn(),
 }));
 
 const languageOptions = computed(() => [

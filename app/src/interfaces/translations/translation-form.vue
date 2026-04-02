@@ -286,26 +286,34 @@ function getTranslationSurface(fieldEl: HTMLElement): HTMLElement {
 			</template>
 
 			<template #controls="{ active, toggle }">
-				<span
+				<button
 					v-if="isTranslatingLanguage"
+					type="button"
 					class="header-translate-btn translating"
-					@click.stop="emit('openTranslateDrawer')"
+					@click.stop="
+						if (active) toggle();
+						emit('openTranslateDrawer');
+					"
 				>
 					<AiMagicButton animate class="header-sparkle" />
 					<span>{{ $t('interfaces.translations.ai_translating') }}</span>
-				</span>
+				</button>
 
-				<span
+				<button
 					v-else-if="showAiTranslate"
 					ref="translateBtn"
+					type="button"
 					class="header-translate-btn"
-					@click.stop="emit('openTranslateDrawer')"
+					@click.stop="
+						if (active) toggle();
+						emit('openTranslateDrawer');
+					"
 				>
 					<AiMagicButton :animate="isHoveringTranslateButton" class="header-sparkle" />
 					<span v-tooltip="$t('interfaces.translations.ai_translate_tooltip')">
 						{{ $t('interfaces.translations.ai_translate_short') }}
 					</span>
-				</span>
+				</button>
 
 				<VRemove
 					v-if="item && !(nonEditable && item.$type !== 'deleted')"
@@ -479,6 +487,12 @@ function getTranslationSurface(fieldEl: HTMLElement): HTMLElement {
 
 	&:hover {
 		color: var(--theme--primary-accent);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--theme--primary);
+		outline-offset: 2px;
+		border-radius: var(--theme--border-radius);
 	}
 }
 

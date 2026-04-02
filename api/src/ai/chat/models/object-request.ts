@@ -6,7 +6,7 @@ import { ProviderAnthropic, ProviderGoogle, ProviderOpenAi, ProviderOpenAiCompat
 export const ObjectRequest = z.intersection(
 	z.discriminatedUnion('provider', [ProviderOpenAi, ProviderAnthropic, ProviderGoogle, ProviderOpenAiCompatible]),
 	z.object({
-		prompt: z.string(),
+		prompt: z.string().min(1),
 		outputSchema: z.custom<JSONSchema7>(zodJsonSchema7Parser, { message: 'Invalid JSON schema' }),
 		maxOutputTokens: z.number().int().min(256).optional(),
 	}),

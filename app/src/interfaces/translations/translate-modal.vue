@@ -28,6 +28,7 @@ import type { DisplayItem } from '@/composables/use-relation-multiple';
 import { usePermissionsStore } from '@/stores/permissions';
 import { useSettingsStore } from '@/stores/settings';
 import { useUserStore } from '@/stores/user';
+import { notify } from '@/utils/notify';
 import { unexpectedError } from '@/utils/unexpected-error';
 
 const nonTranslatableInterfaces = new Set([
@@ -232,6 +233,17 @@ watch(
 	(state) => {
 		if (state !== 'complete') return;
 		if (props.translationJob.hasErrors.value) return;
+
+		const hasWarnings = Object.values(props.translationJob.langStatuses.value).some((s) => s.warning);
+
+		notify({
+			title: t(
+				hasWarnings
+					? 'interfaces.translations.translation_complete_with_warnings'
+					: 'interfaces.translations.translation_complete',
+			),
+			type: hasWarnings ? 'warning' : 'success',
+		});
 
 		props.translationJob.reset();
 		resetToConfig();
@@ -548,6 +560,7 @@ function useTargetPermissions() {
 
 		if (reason === 'pending-delete') return t('interfaces.translations.translation_pending_delete');
 		if (reason === 'not-allowed') return t('interfaces.translations.translation_not_allowed');
+		if (reason === 'error') return t('interfaces.translations.permission_check_failed');
 		return null;
 	}
 
@@ -575,29 +588,29 @@ function useTargetPermissions() {
 				const existing = props.getItemWithLang(props.displayItems, lang.value);
 				const itemPrimaryKey = existing?.[info.junctionPrimaryKeyField.field];
 
-				const permission = await resolveTranslationTargetPermission({
-					isAdmin: userStore.isAdmin,
-					isMarkedForDeletion: existing?.$type === 'deleted',
-					itemPrimaryKey,
-					hasCreatePermission,
-					updatePermissionAccess,
-					fetchItemUpdatePermission: async () => {
-						if (itemPrimaryKey === undefined || itemPrimaryKey === null) return false;
+				try {
+					const permission = await resolveTranslationTargetPermission({
+						isAdmin: userStore.isAdmin,
+						isMarkedForDeletion: existing?.$type === 'deleted',
+						itemPrimaryKey,
+						hasCreatePermission,
+						updatePermissionAccess,
+						fetchItemUpdatePermission: async () => {
+							if (itemPrimaryKey === undefined || itemPrimaryKey === null) return false;
 
-						try {
 							const response = await api.get<{ data: { update: { access: boolean } } }>(
 								`/permissions/me/${collection}/${encodeURIComponent(itemPrimaryKey)}`,
 							);
 
 							return response.data.data.update.access;
-						} catch (error) {
-							unexpectedError(error);
-							return false;
-						}
-					},
-				});
+						},
+					});
 
-				return [lang.value, { ...permission, loading: false }] as const;
+					return [lang.value, { ...permission, loading: false }] as const;
+				} catch (error) {
+					unexpectedError(error);
+					return [lang.value, { allowed: false, reason: 'error' as const, loading: false }] as const;
+				}
 			}),
 		);
 
