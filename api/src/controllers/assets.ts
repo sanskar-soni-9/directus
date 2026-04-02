@@ -13,6 +13,7 @@ import getDatabase from '../database/index.js';
 import { useLogger } from '../logger/index.js';
 import useCollection from '../middleware/use-collection.js';
 import { AssetsService } from '../services/assets.js';
+import { FilesService } from '../services/files.js';
 import { PayloadService } from '../services/payload.js';
 import asyncHandler from '../utils/async-handler.js';
 import { getCacheControlHeader } from '../utils/get-cache-headers.js';
@@ -260,14 +261,54 @@ router.get(
 			}
 		}
 
+		const revalidate = env['ASSETS_CACHE_REVALIDATE'] === true;
+
+		// Check conditional headers before loading the full asset from storage
+		if (revalidate) {
+			const ifNoneMatch = req.headers['if-none-match'];
+			const ifModifiedSince = req.headers['if-modified-since'];
+
+			if (ifNoneMatch || ifModifiedSince) {
+				const filesService = new FilesService({
+					accountability: req.accountability,
+					schema: req.schema,
+				});
+
+				const fileRecord = await filesService.readOne(id, { fields: ['modified_on'] });
+
+				if (fileRecord?.modified_on) {
+					const modifiedOnTime = new Date(fileRecord.modified_on).getTime();
+					const etag = `"${Math.floor(modifiedOnTime / 1000)}"`;
+
+					if (ifNoneMatch === etag) {
+						res.setHeader('Cache-Control', 'max-age=0, must-revalidate');
+						res.setHeader('ETag', etag);
+						res.setHeader('Last-Modified', new Date(modifiedOnTime).toUTCString());
+						res.status(304);
+						return res.end();
+					}
+
+					if (ifModifiedSince) {
+						const ifModifiedSinceTime = new Date(ifModifiedSince).getTime();
+
+						if (Math.floor(modifiedOnTime / 1000) <= Math.floor(ifModifiedSinceTime / 1000)) {
+							res.setHeader('Cache-Control', 'max-age=0, must-revalidate');
+							res.setHeader('ETag', etag);
+							res.setHeader('Last-Modified', new Date(modifiedOnTime).toUTCString());
+							res.status(304);
+							return res.end();
+						}
+					}
+				}
+			}
+		}
+
 		const { stream, file, stat } = await service.getAsset(id, { transformationParams, acceptFormat }, range, true);
 
 		const filename = req.params['filename'] ?? file.filename_download ?? file.id;
 		res.attachment(filename);
 		res.setHeader('Content-Type', file.type);
 		res.setHeader('Accept-Ranges', 'bytes');
-
-		const revalidate = env['ASSETS_CACHE_REVALIDATE'] === true;
 
 		if (revalidate) {
 			res.setHeader('Cache-Control', 'max-age=0, must-revalidate');
@@ -278,34 +319,11 @@ router.get(
 		res.setHeader('Vary', vary.join(', '));
 
 		const unixTime = Date.parse(file.modified_on);
-		let lastModifiedDate: Date | undefined;
 
 		if (!Number.isNaN(unixTime)) {
-			lastModifiedDate = new Date(unixTime);
+			const lastModifiedDate = new Date(unixTime);
 			res.setHeader('Last-Modified', lastModifiedDate.toUTCString());
-
-			const etag = `"${Math.floor(unixTime / 1000)}"`;
-			res.setHeader('ETag', etag);
-
-			if (revalidate) {
-				const ifNoneMatch = req.headers['if-none-match'];
-				const ifModifiedSince = req.headers['if-modified-since'];
-
-				if (ifNoneMatch === etag) {
-					res.status(304);
-					return res.end();
-				}
-
-				if (ifModifiedSince) {
-					const ifModifiedSinceDate = new Date(ifModifiedSince);
-
-					// Truncate to seconds since HTTP dates don't have millisecond precision
-					if (Math.floor(lastModifiedDate.getTime() / 1000) <= Math.floor(ifModifiedSinceDate.getTime() / 1000)) {
-						res.status(304);
-						return res.end();
-					}
-				}
-			}
+			res.setHeader('ETag', `"${Math.floor(unixTime / 1000)}"`);
 		}
 
 		if (range) {
