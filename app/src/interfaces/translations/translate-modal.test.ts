@@ -438,7 +438,7 @@ describe('translate-modal', () => {
 
 		expect(wrapper.text()).toContain('French');
 		expect(wrapper.text()).toContain('Provider timeout');
-		expect(wrapper.text()).toContain('retry');
+		expect(wrapper.text()).toContain('Retry');
 		expect(wrapper.text()).not.toContain('Source Language');
 	});
 

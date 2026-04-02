@@ -54,6 +54,7 @@ vi.mock('@directus/composables', () => ({
 	useCollection: () => ({
 		fields: settingsFields,
 	}),
+	useShortcut: vi.fn(),
 }));
 
 vi.mock('vue-router', async (importOriginal) => {
@@ -141,8 +142,9 @@ describe('settings ai overview', () => {
 
 		expect(getTranslationDefaultField(wrapper)?.meta?.options?.choices).toEqual([
 			{
-				text: 'Anthropic · Claude Sonnet 4.5',
+				text: 'Claude Sonnet 4.5',
 				value: 'anthropic:claude-sonnet-4-5',
+				icon: 'logo_anthropic',
 			},
 		]);
 
@@ -155,12 +157,14 @@ describe('settings ai overview', () => {
 
 		expect(getTranslationDefaultField(wrapper)?.meta?.options?.choices).toEqual([
 			{
-				text: 'OpenAI · GPT-5',
+				text: 'GPT-5',
 				value: 'openai:gpt-5',
+				icon: 'logo_openai',
 			},
 			{
-				text: 'Anthropic · Claude Sonnet 4.5',
+				text: 'Claude Sonnet 4.5',
 				value: 'anthropic:claude-sonnet-4-5',
+				icon: 'logo_anthropic',
 			},
 		]);
 	});
