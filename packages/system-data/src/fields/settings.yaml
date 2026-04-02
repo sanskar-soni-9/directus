@@ -882,7 +882,7 @@ fields:
     options:
       inlineTitle: true
       color: 'var(--theme--foreground-subdued)'
-      title: $t:fields.directus_settings.ai_translation
+      title: $t:translation
     special:
       - alias
       - no-data

@@ -634,23 +634,23 @@ function useTargetPermissions() {
 	<VDrawer
 		:model-value="modelValue"
 		icon="auto_awesome"
-		:title="t('interfaces.translations.ai_translate')"
+		:title="$t('interfaces.translations.ai_translate')"
 		@update:model-value="$emit('update:modelValue', $event)"
 		@cancel="close"
 	>
 		<template #title>
-			<span class="drawer-title">{{ t('interfaces.translations.ai_translate') }}</span>
+			<span class="drawer-title">{{ $t('interfaces.translations.ai_translate') }}</span>
 		</template>
 
 		<div class="content">
 			<!-- State 1: Configuration -->
 			<template v-if="modalState === 'config'">
 				<VNotice v-if="aiStore.models.length === 0" type="warning">
-					{{ t('interfaces.translations.no_translation_models') }}
+					{{ $t('interfaces.translations.no_translation_models') }}
 				</VNotice>
 
 				<VNotice v-if="languageOptions.length <= 1" type="info">
-					{{ t('interfaces.translations.no_additional_languages') }}
+					{{ $t('interfaces.translations.no_additional_languages') }}
 				</VNotice>
 
 				<template v-else>
@@ -658,7 +658,7 @@ function useTargetPermissions() {
 						<div class="field-grid" :class="{ 'has-two-columns': shouldShowModelSelector }">
 							<div class="field-group">
 								<div class="section-header">
-									<span class="section-title-label">{{ t('interfaces.translations.source_language') }}</span>
+									<span class="section-title-label">{{ $t('interfaces.translations.source_language') }}</span>
 								</div>
 
 								<VSelect v-model="sourceLanguage" :items="languageOptions" item-text="text" item-value="value" />
@@ -666,7 +666,7 @@ function useTargetPermissions() {
 
 							<div v-if="shouldShowModelSelector" class="field-group">
 								<div class="section-header">
-									<span class="section-title-label">{{ t('interfaces.translations.model') }}</span>
+									<span class="section-title-label">{{ $t('interfaces.translations.model') }}</span>
 								</div>
 
 								<VMenu v-model="modelSelectorActive" placement="bottom-start">
@@ -742,7 +742,7 @@ function useTargetPermissions() {
 					<!-- Fields to Translate -->
 					<div class="section">
 						<div class="section-header">
-							<span class="section-title-label">{{ t('interfaces.translations.fields_to_translate') }}</span>
+							<span class="section-title-label">{{ $t('fields_to_translate') }}</span>
 						</div>
 
 						<div class="selection-panel">
@@ -769,18 +769,18 @@ function useTargetPermissions() {
 										<span v-if="getSourceFieldValue(field.field)" class="field-preview">
 											{{ getTruncatedSourceValue(field.field) }}
 										</span>
-										<span v-else class="field-preview empty">{{ t('interfaces.translations.empty') }}</span>
+										<span v-else class="field-preview empty">{{ $t('interfaces.translations.empty') }}</span>
 									</div>
 								</div>
 							</div>
 
 							<div class="selection-footer">
 								<button type="button" :disabled="allFieldsSelected" @click="selectAllFields">
-									{{ t('select_all') }}
+									{{ $t('select_all') }}
 								</button>
 								/
 								<button type="button" :disabled="selectedFields.length === 0" @click="deselectAllFields">
-									{{ t('deselect_all') }}
+									{{ $t('deselect_all') }}
 								</button>
 							</div>
 						</div>
@@ -790,7 +790,7 @@ function useTargetPermissions() {
 					<div class="section">
 						<div class="section-header">
 							<span class="section-title-label">
-								{{ t('interfaces.translations.target_languages') }}
+								{{ $t('interfaces.translations.target_languages') }}
 								({{ selectedTargetCount }}/{{ targetLanguageOptions.length }})
 							</span>
 						</div>
@@ -842,11 +842,11 @@ function useTargetPermissions() {
 
 							<div class="selection-footer">
 								<button type="button" :disabled="allTargetsSelected" @click="selectAllTargets">
-									{{ t('select_all') }}
+									{{ $t('select_all') }}
 								</button>
 								/
 								<button type="button" :disabled="selectedTargetLanguages.length === 0" @click="deselectAllTargets">
-									{{ t('deselect_all') }}
+									{{ $t('deselect_all') }}
 								</button>
 							</div>
 						</div>
@@ -854,11 +854,11 @@ function useTargetPermissions() {
 
 					<!-- Empty source warning -->
 					<VNotice v-if="!hasSourceContent && selectedFields.length > 0" type="warning">
-						{{ t('interfaces.translations.no_source_content') }}
+						{{ $t('interfaces.translations.no_source_content') }}
 					</VNotice>
 
 					<VButton class="translate-button" :disabled="!canTranslate" full-width @click="translate">
-						{{ t('interfaces.translations.translate_n_languages', selectedTargetCount) }}
+						{{ $t('interfaces.translations.translate_n_languages', selectedTargetCount) }}
 					</VButton>
 				</template>
 			</template>
@@ -876,7 +876,7 @@ function useTargetPermissions() {
 
 				<div class="section">
 					<div class="section-header">
-						<span class="section-title-label">{{ t('interfaces.translations.fields_to_translate') }}</span>
+						<span class="section-title-label">{{ $t('fields_to_translate') }}</span>
 					</div>
 
 					<div class="selection-panel">
@@ -898,7 +898,7 @@ function useTargetPermissions() {
 									<span v-if="getSourceFieldValue(field.field)" class="field-preview">
 										{{ getTruncatedSourceValue(field.field) }}
 									</span>
-									<span v-else class="field-preview empty">{{ t('interfaces.translations.empty') }}</span>
+									<span v-else class="field-preview empty">{{ $t('interfaces.translations.empty') }}</span>
 								</div>
 
 								<VIcon v-if="getFieldStatus(field.field) === 'done'" name="check" class="status-icon done" x-small />
@@ -910,7 +910,7 @@ function useTargetPermissions() {
 				<div class="section">
 					<div class="section-header">
 						<span class="section-title-label">
-							{{ t('interfaces.translations.target_languages') }}
+							{{ $t('interfaces.translations.target_languages') }}
 							({{ statusTargetLanguages.length }})
 						</span>
 					</div>
@@ -947,12 +947,12 @@ function useTargetPermissions() {
 							{{ languageOptionsByCode.get(langCode)?.text }}:
 							{{ job.langStatuses.value[langCode]?.error }}
 						</span>
-						<VButton x-small secondary @click="retryLanguage(langCode)">{{ t('retry') }}</VButton>
+						<VButton x-small secondary @click="retryLanguage(langCode)">{{ $t('retry') }}</VButton>
 					</div>
 				</VNotice>
 
 				<VButton class="translate-button" secondary full-width @click="cancelJob">
-					{{ t('cancel') }}
+					{{ $t('cancel') }}
 				</VButton>
 			</template>
 		</div>

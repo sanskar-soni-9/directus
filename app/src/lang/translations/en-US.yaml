@@ -1665,7 +1665,6 @@ fields:
     ai_system_prompt: AI System Prompt
     ai_system_prompt_note:
       'Custom AI system prompt to guide LLM behavior in AI Assistant interactions. Leave empty to use the default.'
-    ai_translation: Translation
     ai_translation_default_model: Translation Default Model
     ai_translation_default_model_note:
       'Choose the default model used for AI translations. Only models enabled in the settings above are available here.'
@@ -2442,7 +2441,6 @@ interfaces:
     ai_translate_tooltip: Translate your content automatically with AI
     model: Model
     source_language: Source Language
-    fields_to_translate: Fields to Translate
     target_languages: Target Languages
     translate_n_languages: 'Translate {count} language | Translate {count} languages'
     translating_n_languages: 'Translating {count} language... | Translating {count} languages...'
@@ -2457,8 +2455,6 @@ interfaces:
     retrying: Retrying
     empty: (empty)
     field_empty_tooltip: This field has no source content to translate
-    all: All
-    none: None
     ai_translating: Translating...
     ai_translating_progress: 'Translating {done} of {total} languages...'
     translation_has_errors: Some translations failed. Click to view.
