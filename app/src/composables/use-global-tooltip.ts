@@ -35,8 +35,9 @@ function openTooltip(payload: TooltipPayload, immediateContent = false): void {
 	if (immediateContent) state.content = payload.content;
 
 	timer = setTimeout(() => {
-		Object.assign(state, payload);
-		state.open = true;
+        const { delayDuration: _, ...rest } = payload;
+        Object.assign(state, rest);
+        state.open = true;
 	}, payload.delayDuration);
 }
 
