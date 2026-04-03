@@ -1,5 +1,10 @@
 import type { Directive, DirectiveBinding } from 'vue';
-import { TOOLTIP_CONTENT_ID, useGlobalTooltip } from '@/composables/use-global-tooltip';
+import {
+	TOOLTIP_CONTENT_ID,
+	type TooltipAlign,
+	type TooltipSide,
+	useGlobalTooltip,
+} from '@/composables/use-global-tooltip';
 
 export function isDisabled(element: HTMLElement): boolean {
 	return (
@@ -9,17 +14,15 @@ export function isDisabled(element: HTMLElement): boolean {
 	);
 }
 
-const SIDES = ['top', 'bottom', 'left', 'right'] as const;
-type Side = (typeof SIDES)[number];
+const SIDES: TooltipSide[] = ['top', 'bottom', 'left', 'right'];
 
-export function resolveSide(binding: DirectiveBinding): Side {
+export function resolveSide(binding: DirectiveBinding): TooltipSide {
 	return SIDES.find((s) => binding.modifiers[s] || binding.arg === s) ?? 'top';
 }
 
-const ALIGNS = ['start', 'center', 'end'] as const;
-type Align = (typeof ALIGNS)[number];
+const ALIGNS: TooltipAlign[] = ['start', 'center', 'end'];
 
-export function resolveAlign(binding: DirectiveBinding): Align {
+export function resolveAlign(binding: DirectiveBinding): TooltipAlign {
 	return ALIGNS.find((a) => binding.modifiers[a]) ?? 'center';
 }
 

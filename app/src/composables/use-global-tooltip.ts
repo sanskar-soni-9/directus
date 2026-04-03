@@ -3,10 +3,13 @@ import { reactive } from 'vue';
 
 export const TOOLTIP_CONTENT_ID = 'app-tooltip-content';
 
+export type TooltipSide = 'top' | 'bottom' | 'left' | 'right';
+export type TooltipAlign = 'start' | 'center' | 'end';
+
 export interface TooltipPayload {
 	content: string;
-	side: 'top' | 'bottom' | 'left' | 'right';
-	align: 'start' | 'center' | 'end';
+	side: TooltipSide;
+	align: TooltipAlign;
 	inverted: boolean;
 	monospace: boolean;
 	delayDuration: number;
@@ -35,9 +38,9 @@ function openTooltip(payload: TooltipPayload, immediateContent = false): void {
 	if (immediateContent) state.content = payload.content;
 
 	timer = setTimeout(() => {
-        const { delayDuration: _, ...rest } = payload;
-        Object.assign(state, rest);
-        state.open = true;
+		const { delayDuration: _, ...rest } = payload;
+		Object.assign(state, rest);
+		state.open = true;
 	}, payload.delayDuration);
 }
 
