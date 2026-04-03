@@ -148,6 +148,9 @@ function updateValue(item: DisplayItem | undefined, lang: string | undefined) {
 
 		update(itemUpdates);
 	} else {
+		// fetched relation items might still be loading, so avoid creating duplicate rows
+		if (itemsLoading.value) return;
+
 		create({
 			...item,
 			[info.junctionField.field]: {

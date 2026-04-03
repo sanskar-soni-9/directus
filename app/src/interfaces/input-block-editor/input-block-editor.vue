@@ -17,9 +17,6 @@ import { unexpectedError } from '@/utils/unexpected-error';
 
 import './editorjs-overrides.css';
 
-// https://github.com/codex-team/editor.js/blob/057bf17a6fc2d5e05c662107918d7c3e943d077c/src/components/events/RedactorDomChanged.ts#L4
-const RedactorDomChanged = 'redactor dom changed';
-
 const props = withDefaults(
 	defineProps<{
 		disabled?: boolean;
@@ -57,6 +54,9 @@ const uploaderComponentElement = ref<HTMLElement>();
 const editorElement = ref<HTMLElement>();
 const haveFilesAccess = Boolean(collectionStore.getCollection('directus_files'));
 const haveValuesChanged = ref(false);
+const isRendering = ref(false); // suppresses onChange → emitValue during programmatic renders
+const emitGeneration = ref(0); // discards out-of-order saver.save() results
+let pendingRender: ReturnType<typeof sanitizeValue> | undefined = undefined; // value queued while a render is in progress
 const router = useRouter();
 
 const tools = getTools(
@@ -80,7 +80,6 @@ onMounted(async () => {
 	editorjsRef.value = new EditorJS({
 		logLevel: 'ERROR' as EditorJS.LogLevels,
 		holder: editorElement.value,
-		// Do not set readOnly to true here — see the watcher below
 		readOnly: false,
 		placeholder: props.placeholder,
 		minHeight: 72,
@@ -93,22 +92,31 @@ onMounted(async () => {
 	const sanitizedValue = sanitizeValue(props.value);
 
 	if (sanitizedValue) {
-		await editorjsRef.value.render(sanitizedValue);
+		isRendering.value = true;
+
+		try {
+			await editorjsRef.value.render(sanitizedValue);
+		} finally {
+			await nextTick();
+			isRendering.value = false;
+
+			if (pendingRender !== undefined) {
+				const next = pendingRender;
+				pendingRender = undefined;
+				await renderValue(next);
+			}
+		}
 	}
 
 	if (props.autofocus) {
 		editorjsRef.value.focus();
 	}
 
-	editorjsRef.value.on(RedactorDomChanged, () => {
-		emitValue(editorjsRef.value!);
-	});
-
 	editorjsIsReady.value = true;
 });
 
 onUnmounted(() => {
-	editorjsRef.value?.destroy();
+	editorjsRef.value?.destroy?.();
 	bus.reset();
 });
 
@@ -117,9 +125,10 @@ watch(
 	async ([isReady, isDisabled]) => {
 		if (!isReady) return;
 
-		// Note: EditorJS must be ready before readOnly is toggled; otherwise, the content won’t render, which could result in data loss!
+		// Note: EditorJS must be ready before readOnly is toggled; otherwise, the content won't render, which could result in data loss!
 		await nextTick();
-		editorjsRef.value?.readOnly.toggle(isDisabled);
+		// Instance may be mid-teardown/recreate; `readOnly` is not always present yet.
+		editorjsRef.value?.readOnly?.toggle?.(isDisabled);
 	},
 	{ immediate: true },
 );
@@ -140,35 +149,90 @@ watch(
 
 		if (isEqual(newVal?.blocks, oldVal?.blocks)) return;
 
-		try {
-			const sanitizedValue = sanitizeValue(newVal);
+		const sanitizedValue = sanitizeValue(newVal);
 
-			if (sanitizedValue) {
-				await editorjsRef.value.render(sanitizedValue);
-			} else {
-				editorjsRef.value.clear();
-			}
-		} catch (error) {
-			unexpectedError(error);
+		if (isRendering.value) {
+			pendingRender = sanitizedValue;
+			return;
 		}
+
+		await renderValue(sanitizedValue);
 	},
 );
 
+async function renderValue(sanitizedValue: ReturnType<typeof sanitizeValue>) {
+	try {
+		isRendering.value = true;
+
+		await nextTick();
+
+		if (!editorElement.value) return;
+
+		// Destroy and rebuild the editor instead of calling render() on the same instance.
+		// Repeated render() calls (especially after save-and-stay / relation refetches) can
+		// leave duplicate blocks in the DOM even though the saved JSON is correct.
+		editorjsRef.value?.destroy?.();
+		editorjsRef.value = undefined;
+
+		// Use a local variable — reading `editorjsRef.value` after an await can return
+		// a stale/different instance if another async watcher execution ran concurrently.
+		const editor = new EditorJS({
+			logLevel: 'ERROR' as EditorJS.LogLevels,
+			holder: editorElement.value!,
+			readOnly: false,
+			placeholder: props.placeholder,
+			minHeight: 72,
+			onChange: (api) => emitValue(api),
+			tools: tools,
+		});
+
+		await editor.isReady;
+		await nextTick();
+
+		editorjsRef.value = editor;
+
+		if (sanitizedValue) {
+			await editor.render(sanitizedValue);
+		} else {
+			await editor.clear();
+		}
+
+		// Sync readOnly — the disabled watcher may have fired while editorjsRef was undefined
+		await nextTick();
+		editor.readOnly?.toggle?.(props.disabled);
+	} catch (error) {
+		unexpectedError(error);
+	} finally {
+		await nextTick();
+		isRendering.value = false;
+
+		if (pendingRender !== undefined) {
+			const next = pendingRender;
+			pendingRender = undefined;
+			await renderValue(next);
+		}
+	}
+}
+
 async function emitValue(context: EditorJS.API | EditorJS) {
-	if (props.disabled || !context || !context.saver) return;
+	if (props.disabled || isRendering.value || !context || !context.saver) return;
+
+	const generation = ++emitGeneration.value;
 
 	try {
 		const result = await context.saver.save();
 
-		haveValuesChanged.value = true;
+		if (generation !== emitGeneration.value) return;
 
 		if (!result || result.blocks.length < 1) {
+			haveValuesChanged.value = true;
 			emit('input', null);
 			return;
 		}
 
 		if (isEqual(result.blocks, props.value?.blocks)) return;
 
+		haveValuesChanged.value = true;
 		emit('input', result);
 	} catch (error) {
 		unexpectedError(error);

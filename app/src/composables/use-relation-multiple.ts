@@ -255,7 +255,17 @@ export function useRelationMultiple(
 
 			for (const item of items) {
 				if (item.$type === undefined || item.$index === undefined) {
-					target.value.update.push(cleanItem(item));
+					const clean = cleanItem(item);
+					const pk = clean[targetPKField.value];
+
+					const existingIndex =
+						pk === undefined ? -1 : target.value.update.findIndex((existing) => existing[targetPKField.value] === pk);
+
+					if (existingIndex === -1) {
+						target.value.update.push(clean);
+					} else {
+						target.value.update[existingIndex] = clean;
+					}
 				} else if (item.$type === 'created') {
 					target.value.create[item.$index] = cleanItem(item);
 				} else if (item.$type === 'updated') {

@@ -214,6 +214,45 @@ describe('test o2m relation', () => {
 		});
 	});
 
+	test('updating same item twice without metadata should replace update entry', async () => {
+		const wrapper = mount(TestComponent, {
+			props: { relation: relationO2M, value: [], id: 1 },
+		});
+
+		wrapper.vm.update({ id: 2, name: 'first-update' });
+		wrapper.vm.update({ id: 2, name: 'second-update' });
+
+		await flushPromises();
+
+		expect(wrapper.vm.value).toEqual({
+			create: [],
+			update: [
+				{
+					id: 2,
+					name: 'second-update',
+				},
+			],
+			delete: [],
+		});
+	});
+
+	test('updating items without a pk twice should append both entries (pk=undefined always appends)', async () => {
+		const wrapper = mount(TestComponent, {
+			props: { relation: relationO2M, value: [], id: 1 },
+		});
+
+		wrapper.vm.update({ name: 'first-no-pk' });
+		wrapper.vm.update({ name: 'second-no-pk' });
+
+		await flushPromises();
+
+		expect(wrapper.vm.value).toEqual({
+			create: [],
+			update: [{ name: 'first-no-pk' }, { name: 'second-no-pk' }],
+			delete: [],
+		});
+	});
+
 	test('removing an item', async () => {
 		const wrapper = mount(TestComponent, {
 			props: { relation: relationO2M, value: [], id: 1 },
