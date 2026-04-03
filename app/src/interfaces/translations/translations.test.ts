@@ -3,12 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { ref } from 'vue';
 import Translations from './translations.vue';
 
-const {
-	createMock,
-	updateMock,
-	removeMock,
-	state,
-} = vi.hoisted(() => ({
+const { createMock, updateMock, removeMock, state } = vi.hoisted(() => ({
 	createMock: vi.fn(),
 	updateMock: vi.fn(),
 	removeMock: vi.fn(),

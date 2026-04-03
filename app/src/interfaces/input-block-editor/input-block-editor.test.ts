@@ -390,4 +390,42 @@ describe('InputBlockEditor', () => {
 
 		wrapper.unmount();
 	});
+
+	test('should call clear() when value changes to null while editor is enabled', async () => {
+		const clear = vi.fn().mockResolvedValue(undefined);
+
+		vi.mocked(EditorJS).mockImplementation(
+			() =>
+				({
+					isReady: Promise.resolve(),
+					render: vi.fn().mockResolvedValue(undefined),
+					clear,
+					destroy: vi.fn(),
+					focus: vi.fn(),
+					on: vi.fn(),
+					saver: { save: vi.fn().mockResolvedValue({ blocks: [] }) },
+					readOnly: { toggle: vi.fn() },
+				}) as any,
+		);
+
+		const wrapper = mount(InputBlockEditor, {
+			props: {
+				disabled: false,
+				value: { blocks: [{ type: 'paragraph', data: { text: 'initial' } }] },
+			},
+			global: {
+				directives: { 'prevent-focusout': {} },
+				stubs: { VDrawer: true, VUpload: true },
+			},
+		});
+
+		await flushPromises();
+
+		await wrapper.setProps({ value: null });
+		await flushPromises();
+
+		expect(clear).toHaveBeenCalled();
+
+		wrapper.unmount();
+	});
 });
