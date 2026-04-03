@@ -155,9 +155,9 @@ watch(
 );
 
 async function renderValue(sanitizedValue: ReturnType<typeof sanitizeValue>) {
-	try {
-		isRendering.value = true;
+	isRendering.value = true;
 
+	try {
 		await nextTick();
 
 		if (!editorElement.value) return;
@@ -194,8 +194,6 @@ async function renderValue(sanitizedValue: ReturnType<typeof sanitizeValue>) {
 		// Sync readOnly — the disabled watcher may have fired while editorjsRef was undefined
 		await nextTick();
 		editor.readOnly?.toggle?.(props.disabled);
-	} catch (error) {
-		unexpectedError(error);
 	} finally {
 		await nextTick();
 		isRendering.value = false;
