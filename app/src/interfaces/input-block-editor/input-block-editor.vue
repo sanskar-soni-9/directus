@@ -99,12 +99,6 @@ onMounted(async () => {
 		} finally {
 			await nextTick();
 			isRendering.value = false;
-
-			if (pendingRender !== undefined) {
-				const next = pendingRender;
-				pendingRender = undefined;
-				await renderValue(next);
-			}
 		}
 	}
 
