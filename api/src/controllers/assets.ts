@@ -270,11 +270,21 @@ router.get(
 
 			if (ifNoneMatch || ifModifiedSince) {
 				const filesService = new FilesService({
-					accountability: null,
+					accountability: req.accountability,
 					schema: req.schema,
 				});
 
-				const fileRecord = await filesService.readOne(id, { fields: ['modified_on'] });
+				let fileRecord = await filesService.readOne(id, { fields: ['modified_on'] });
+
+				// If modified_on is not available due to field level permissions, we fetch as admin
+				if (!fileRecord?.modified_on) {
+					const adminFilesService = new FilesService({
+						accountability: null,
+						schema: req.schema,
+					});
+
+					fileRecord = await adminFilesService.readOne(id, { fields: ['modified_on'] });
+				}
 
 				if (fileRecord?.modified_on) {
 					const modifiedOnTime = new Date(fileRecord.modified_on).getTime();
