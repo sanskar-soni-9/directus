@@ -270,7 +270,7 @@ router.get(
 
 			if (ifNoneMatch || ifModifiedSince) {
 				const filesService = new FilesService({
-					accountability: req.accountability,
+					accountability: null,
 					schema: req.schema,
 				});
 
