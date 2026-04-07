@@ -239,7 +239,7 @@ useShortcut(
 );
 
 useShortcut(
-	'meta+shift+p',
+	'meta+alt+p',
 	() => {
 		if (currentVersion.value !== null && isPublishAllowed.value) {
 			onVersionPublishCompare();
@@ -249,7 +249,7 @@ useShortcut(
 );
 
 useShortcut(
-	'meta+alt+p',
+	'meta+alt+shift+p',
 	() => {
 		if (currentVersion.value !== null && isPublishAllowed.value && !collectionInfo.value?.meta?.singleton) {
 			onVersionPublishCompare(true);
@@ -956,7 +956,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 						icon
 						small
 						:disabled="!isPublishAllowed"
-						:tooltip="`${$t('publish')} [${translateShortcut(['meta', 'shift', 'p'])}]`"
+						:tooltip="`${$t('publish')} (${translateShortcut(['meta', 'alt', 'p'])})`"
 						@click="onVersionPublishCompare"
 					>
 						<VIcon name="public" small />
@@ -974,7 +974,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 									<VListItem clickable @click="onVersionPublishCompare(true)">
 										<VListItemIcon><VIcon name="public" /></VListItemIcon>
 										<VListItemContent>{{ $t('publish_and_quit') }}</VListItemContent>
-										<VListItemHint>{{ translateShortcut(['meta', 'alt', 'p']) }}</VListItemHint>
+										<VListItemHint>{{ translateShortcut(['meta', 'alt', 'shift', 'p']) }}</VListItemHint>
 									</VListItem>
 								</VList>
 							</VMenu>
