@@ -255,5 +255,33 @@ describe('validateJsonFilter (via validateQuery)', async () => {
 				'"_json" path "color" cannot contain a nested path "theme"; use a single flat path like "color.theme"',
 			);
 		});
+
+		describe('invalid path syntax', () => {
+			test.each([
+				['recursive descent', 'settings..theme'],
+				['wildcard', 'items.*'],
+				['filter expression', 'items[?(@.price)]'],
+				['script expression', 'items[(@.length-1)]'],
+				['root identifier', '$.color'],
+				['current node', '@.color'],
+				['negative array index', 'items[-1]'],
+				['empty brackets', 'items[]'],
+				['single quote (SQL injection)', "color'--"],
+			])('throws for %s path "%s"', (_label, path) => {
+				expect(() => validateQuery(withJson({ [path]: { _eq: 'x' } }) as any)).toThrowError(
+					'Invalid JSON path: unsupported path expression',
+				);
+			});
+		});
+	});
+
+	describe('valid path syntax', () => {
+		test.each([
+			['array index', 'items[0]'],
+			['nested dot-path with index', 'settings.items[2].color'],
+			['unicode letter path', 'données'],
+		])('accepts %s path "%s"', (_label, path) => {
+			expect(() => validateQuery(withJson({ [path]: { _eq: 'x' } }) as any)).not.toThrowError();
+		});
 	});
 });

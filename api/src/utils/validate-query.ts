@@ -4,6 +4,7 @@ import type { Filter, Query } from '@directus/types';
 import Joi from 'joi';
 import { isPlainObject, uniq } from 'lodash-es';
 import { stringify } from 'wellknown';
+import { parseJsonPath } from '../database/helpers/fn/json/parse-function.js';
 import { calculateFieldDepth } from './calculate-field-depth.js';
 import { getFieldRelationalDepth } from './get-field-relational-depth.js';
 
@@ -192,6 +193,9 @@ function validateJsonFilter(value: unknown) {
 
 			continue;
 		}
+
+		// Throws for invalid or unsupported json paths
+		parseJsonPath(path);
 
 		if (!isPlainObject(innerFilter)) {
 			throw new InvalidQueryError({ reason: `"_json" inner filter for path "${path}" must be an object` });
