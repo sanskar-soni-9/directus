@@ -1,5 +1,11 @@
 ---
-'@directus/app': minor
+'@directus/app': major
 ---
 
-Added Edit button to header of versionable published items
+Locked published items in versioned collections from editing and added a header action button to edit in the draft version.
+
+::: notice
+
+- **Breaking change — new behavior for versioned collections** Published items in versioned collections are now locked. Edits must be made through the draft version.
+
+:::

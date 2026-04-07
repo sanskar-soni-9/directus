@@ -109,7 +109,6 @@ const {
 	validationErrors: versionValidationErrors,
 	publishVersionLoading,
 	publishVersion,
-	isPublishedItem,
 } = useVersions(collection, isSingleton, primaryKey);
 
 const { comparisonModalActive, comparableVersion, onVersionPublishCompare, onVersionPublishConfirm } =
@@ -158,7 +157,7 @@ const {
 } = useCollab(collection, primaryKey, currentVersion, item, edits, getItem);
 
 const validationErrors = computed(() => {
-	if (isPublishedItem.value) return itemValidationErrors.value;
+	if (currentVersion.value === null) return itemValidationErrors.value;
 	return versionValidationErrors.value;
 });
 
@@ -215,7 +214,7 @@ const archiveTooltip = computed(() => {
 useShortcut(
 	'meta+s',
 	() => {
-		if (isPublishedItem.value) {
+		if (currentVersion.value === null) {
 			saveAndStay();
 		} else {
 			saveVersionAction('stay');
@@ -227,7 +226,7 @@ useShortcut(
 useShortcut(
 	'meta+shift+s',
 	() => {
-		if (isPublishedItem.value) {
+		if (currentVersion.value === null) {
 			saveAndAddNew();
 		} else {
 			saveVersionAction('quit');
@@ -239,7 +238,7 @@ useShortcut(
 useShortcut(
 	'meta+alt+s',
 	() => {
-		if (!isPublishedItem.value) {
+		if (currentVersion.value !== null) {
 			saveVersionAction(VERSION_KEY_PUBLISHED);
 		}
 	},
@@ -267,7 +266,7 @@ useShortcut(
 );
 
 const isSavable = computed(() => {
-	if (saveAllowed.value === false && isPublishedItem.value) return false;
+	if (saveAllowed.value === false && currentVersion.value === null) return false;
 	if (hasEdits.value === true) return true;
 
 	if (
@@ -278,7 +277,7 @@ const isSavable = computed(() => {
 		return !!edits.value?.[primaryKeyField.value.field];
 	}
 
-	if (isNew.value && isPublishedItem.value) {
+	if (isNew.value && currentVersion.value === null) {
 		return Object.keys(defaults.value).length > 0 || hasEdits.value;
 	}
 
@@ -294,9 +293,11 @@ const { updateAllowed: updateVersionsAllowed } = useItemPermissions(
 const isFormDisabled = computed(() => {
 	if (isNew.value) return false;
 	if (updateAllowed.value) return false;
-	if (!isPublishedItem.value && updateVersionsAllowed.value) return false;
+	if (currentVersion.value !== null && updateVersionsAllowed.value) return false;
 	return true;
 });
+
+const isFormNonEditable = computed(() => shouldShowVersioning.value && currentVersion.value === null);
 
 const actualPrimaryKey = computed(() => {
 	if (unref(isSingleton)) {
@@ -553,7 +554,7 @@ async function saveAndStay() {
 
 async function saveAndAddNew() {
 	if (isSavable.value === false) return;
-	if (!isPublishedItem.value) return;
+	if (currentVersion.value !== null) return;
 
 	try {
 		await save();
@@ -777,7 +778,7 @@ function usePublishComparison() {
 	};
 }
 
-function editPublishedVersion() {
+function editDraftVersion() {
 	const draftVersion = versions.value.find((version) => version.key === VERSION_KEY_DRAFT);
 
 	if (draftVersion) {
@@ -871,7 +872,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 			</VButton>
 
 			<VDialog
-				v-if="!isNew && isPublishedItem"
+				v-if="!isNew && currentVersion === null"
 				v-model="confirmDelete"
 				:disabled="deleteAllowed === false"
 				@esc="confirmDelete = false"
@@ -908,7 +909,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 			</VDialog>
 
 			<VDialog
-				v-if="collectionInfo.meta && collectionInfo.meta.archive_field && !isNew && isPublishedItem"
+				v-if="collectionInfo.meta && collectionInfo.meta.archive_field && !isNew && currentVersion === null"
 				v-model="confirmArchive"
 				:disabled="archiveAllowed === false"
 				@esc="confirmArchive = false"
@@ -943,7 +944,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 				</VCard>
 			</VDialog>
 			<template v-if="shouldShowVersioning">
-				<VButton v-if="isPublishedItem" rounded icon :tooltip="$t('edit_item')" small @click="editPublishedVersion">
+				<VButton v-if="currentVersion === null" rounded icon :tooltip="$t('edit_item')" small @click="editDraftVersion">
 					<VIcon name="edit" small />
 				</VButton>
 				<template v-else>
@@ -993,7 +994,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 			</template>
 			<template v-else>
 				<VButton
-					v-if="isPublishedItem"
+					v-if="currentVersion === null"
 					rounded
 					icon
 					:tooltip="saveAllowed ? $t('save') : $t('not_allowed')"
@@ -1044,11 +1045,11 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 					ref="form"
 					v-model="edits"
 					:autofocus="isNew"
-					:disabled="isFormDisabled || (shouldShowVersioning && isPublishedItem)"
+					:disabled="isFormDisabled || isFormNonEditable"
 					:loading="loading"
 					:initial-values="item"
 					:fields="fields"
-					:non-editable="shouldShowVersioning && isPublishedItem"
+					:non-editable="isFormNonEditable"
 					:primary-key="internalPrimaryKey"
 					:collab-context="collabContext"
 					:validation-errors="validationErrors"
@@ -1154,14 +1155,18 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 					:scope="accountabilityScope"
 					@revert="revert"
 				/>
-				<CommentsSidebarDetail v-if="isPublishedItem" :collection="collection" :primary-key="actualPrimaryKey" />
+				<CommentsSidebarDetail
+					v-if="currentVersion === null"
+					:collection="collection"
+					:primary-key="actualPrimaryKey"
+				/>
 				<SharesSidebarDetail
-					v-if="isPublishedItem"
+					v-if="currentVersion === null"
 					:collection="collection"
 					:primary-key="actualPrimaryKey"
 					:allowed="shareAllowed"
 				/>
-				<FlowSidebarDetail v-if="isPublishedItem" :manual-flows />
+				<FlowSidebarDetail v-if="currentVersion === null" :manual-flows />
 			</template>
 		</template>
 	</PrivateView>
