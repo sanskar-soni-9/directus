@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCollection } from '@directus/composables';
+import { translateShortcut, useCollection, useShortcut } from '@directus/composables';
 import { VERSION_KEY_DRAFT, VERSION_KEY_PUBLISHED } from '@directus/constants';
 import type { PrimaryKey } from '@directus/types';
 import { SplitPanel } from '@directus/vue-split-panel';
@@ -34,7 +34,6 @@ import { useEditsGuard } from '@/composables/use-edits-guard';
 import { useFlows } from '@/composables/use-flows';
 import { useItem } from '@/composables/use-item';
 import { useCollectionPermissions, useItemPermissions } from '@/composables/use-permissions';
-import { useShortcut } from '@/composables/use-shortcut';
 import { useTemplateData } from '@/composables/use-template-data';
 import { useVersions } from '@/composables/use-versions';
 import { useVisualEditing } from '@/composables/use-visual-editing';
@@ -47,7 +46,6 @@ import { getCollectionRoute, getItemRoute } from '@/utils/get-route';
 import { mergeItemData } from '@/utils/merge-item-data';
 import { pushGroupOptionsDown } from '@/utils/push-group-options-down';
 import { renderStringTemplate } from '@/utils/render-string-template';
-import { translateShortcut } from '@/utils/translate-shortcut';
 import { validateItem } from '@/utils/validate-item';
 import { PrivateView } from '@/views/private';
 import CollabIndicatorHeader from '@/views/private/components/collab/CollabIndicatorHeader.vue';
