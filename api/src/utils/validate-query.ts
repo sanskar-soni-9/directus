@@ -177,7 +177,7 @@ function validateJsonFilter(value: unknown) {
 	}
 
 	for (const [path, innerFilter] of Object.entries(value as Record<string, unknown>)) {
-		if (typeof path !== 'string' || path.length === 0) {
+		if (path.length === 0) {
 			throw new InvalidQueryError({ reason: `"_json" path key must be a non-empty string` });
 		}
 
