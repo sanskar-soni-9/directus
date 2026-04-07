@@ -142,6 +142,7 @@ watch(
 
 		try {
 			const sanitizedValue = sanitizeValue(newVal);
+			if (editorjsRef.value.readOnly.isEnabled) return;
 
 			if (sanitizedValue) {
 				await editorjsRef.value.render(sanitizedValue);
