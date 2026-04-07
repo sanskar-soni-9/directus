@@ -233,7 +233,7 @@ function applyOperatorToRaw(
 		dbQuery[logical].andWhere((query) => {
 			query.whereNotNull(raw).andWhere(raw, '!=', '');
 		});
-		
+
 		return;
 	}
 

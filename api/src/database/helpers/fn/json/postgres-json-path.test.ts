@@ -117,6 +117,9 @@ describe('buildPostgresJsonPath (forFilter)', () => {
 	});
 
 	test('array index only uses ->> for filter', () => {
-		expect(buildPostgresJsonPath('.items[0]', {forFilter: true })).toEqual({ template: '->?->>0', bindings: ['items'] });
+		expect(buildPostgresJsonPath('.items[0]', { forFilter: true })).toEqual({
+			template: '->?->>0',
+			bindings: ['items'],
+		});
 	});
 });
