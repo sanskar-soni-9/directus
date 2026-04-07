@@ -78,7 +78,7 @@ export class FnHelperPostgres extends FnHelper {
 			throw new InvalidQueryError({ reason: `${collectionName}.${column} is not a JSON field` });
 		}
 
-		const { template, bindings } = buildPostgresJsonPath(options.jsonPath, options.jsonFilter);
+		const { template, bindings } = buildPostgresJsonPath(options.jsonPath, { forFilter: Boolean(options.jsonFilter) });
 		const cast = fieldSchema.dbType === 'jsonb' ? 'jsonb' : 'json';
 
 		if (options.castNumeric) {

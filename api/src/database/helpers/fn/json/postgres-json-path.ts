@@ -15,7 +15,7 @@ import { toPath } from 'lodash-es';
  */
 export function buildPostgresJsonPath(
 	path: string,
-	forFilter?: boolean, // QUESTION Can we do this differently?
+	options?: { forFilter?: boolean },
 ): { template: string; bindings: (string | number)[] } {
 	const parts = toPath(path.startsWith('.') ? path.slice(1) : path);
 
@@ -41,7 +41,7 @@ export function buildPostgresJsonPath(
 
 	// handle final part here
 	const part = parts[parts.length - 1]!;
-	const operator = forFilter ? '->>' : '->';
+	const operator = options?.forFilter ? '->>' : '->';
 
 	if (isArrayIndex(part)) {
 		// Same as above: isArrayIndex guarantees a non-negative integer literal, safe to inline.
