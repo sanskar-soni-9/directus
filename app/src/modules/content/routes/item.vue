@@ -80,6 +80,11 @@ const userStore = useUserStore();
 
 const isCurrentVersionNew = computed(() => isVersionNew(currentVersion.value));
 
+const isPublishAllowed = computed(() => {
+	if (isCurrentVersionNew.value) return false;
+	return props.primaryKey === '+' ? createAllowed.value : updateAllowed.value;
+});
+
 const form = ref<ComponentPublicInstance>();
 
 const scrollParent = computed(() => form.value?.$el?.parentElement);
@@ -236,7 +241,7 @@ useShortcut(
 useShortcut(
 	'meta+shift+p',
 	() => {
-		if (currentVersion.value !== null && !isCurrentVersionNew.value) {
+		if (currentVersion.value !== null && isPublishAllowed.value) {
 			onVersionPublishCompare();
 		}
 	},
@@ -246,7 +251,7 @@ useShortcut(
 useShortcut(
 	'meta+alt+p',
 	() => {
-		if (currentVersion.value !== null && !isCurrentVersionNew.value && !collectionInfo.value?.meta?.singleton) {
+		if (currentVersion.value !== null && isPublishAllowed.value && !collectionInfo.value?.meta?.singleton) {
 			onVersionPublishCompare(true);
 		}
 	},
@@ -950,7 +955,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 						rounded
 						icon
 						small
-						:disabled="isCurrentVersionNew"
+						:disabled="!isPublishAllowed"
 						:tooltip="`${$t('publish_version')} [${translateShortcut(['meta', 'shift', 'p'])}]`"
 						@click="onVersionPublishCompare"
 					>
@@ -958,7 +963,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 
 						<template #append-outer>
 							<VMenu
-								v-if="collectionInfo.meta && collectionInfo.meta.singleton !== true && !isCurrentVersionNew"
+								v-if="collectionInfo.meta && collectionInfo.meta.singleton !== true && isPublishAllowed"
 								show-arrow
 							>
 								<template #activator="{ toggle }">
