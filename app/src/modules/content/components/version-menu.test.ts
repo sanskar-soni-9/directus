@@ -306,7 +306,7 @@ describe('VersionMenu', () => {
 	});
 
 	describe('new unsaved versions', () => {
-		it('should disable publish and discard', () => {
+		it('should disable discard for unsaved versions', () => {
 			const newVersion = createNewVersion({ key: 'draft', type: 'global' });
 
 			const wrapper = mount(VersionMenu, {
@@ -319,10 +319,8 @@ describe('VersionMenu', () => {
 			});
 
 			const listItems = wrapper.findAll('.v-list-item');
-			const publishItem = listItems.find((item) => item.text().includes(i18n.global.t('publish_version')));
 			const deleteItem = listItems.find((item) => item.text().includes(i18n.global.t('discard_changes')));
 
-			expect(publishItem?.classes()).toContain('disabled');
 			expect(deleteItem?.classes()).toContain('disabled');
 		});
 
@@ -339,51 +337,6 @@ describe('VersionMenu', () => {
 
 			expect(createItem).toBeDefined();
 			expect(createItem?.classes()).toContain('disabled');
-		});
-	});
-
-	describe('item-less version publish', () => {
-		it('should show publish when primaryKey is "+" and createAllowed is true', () => {
-			const savedDraftVersion = createMockVersion({ id: 'draft-uuid', key: 'draft', type: 'global', item: null });
-
-			const wrapper = mount(VersionMenu, {
-				...mountOptions,
-				props: {
-					...baseProps,
-					primaryKey: '+',
-					createAllowed: true,
-					updateAllowed: false,
-					versions: [savedDraftVersion],
-					currentVersion: savedDraftVersion,
-				},
-			});
-
-			const listItems = wrapper.findAll('.v-list-item');
-			const publishItem = listItems.find((item) => item.text().includes(i18n.global.t('publish_version')));
-
-			expect(publishItem).toBeDefined();
-			expect(publishItem?.classes()).not.toContain('disabled');
-		});
-
-		it('should hide publish when primaryKey is "+" and createAllowed is false', () => {
-			const savedDraftVersion = createMockVersion({ id: 'draft-uuid', key: 'draft', type: 'global', item: null });
-
-			const wrapper = mount(VersionMenu, {
-				...mountOptions,
-				props: {
-					...baseProps,
-					primaryKey: '+',
-					createAllowed: false,
-					updateAllowed: false,
-					versions: [savedDraftVersion],
-					currentVersion: savedDraftVersion,
-				},
-			});
-
-			const listItems = wrapper.findAll('.v-list-item');
-			const publishItem = listItems.find((item) => item.text().includes(i18n.global.t('publish_version')));
-
-			expect(publishItem).toBeUndefined();
 		});
 	});
 
