@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCollection } from '@directus/composables';
-import { VERSION_KEY_PUBLISHED } from '@directus/constants';
+import { VERSION_KEY_DRAFT, VERSION_KEY_PUBLISHED } from '@directus/constants';
 import type { PrimaryKey } from '@directus/types';
 import { SplitPanel } from '@directus/vue-split-panel';
 import { useHead } from '@unhead/vue';
@@ -212,7 +212,7 @@ const archiveTooltip = computed(() => {
 useShortcut(
 	'meta+s',
 	() => {
-		if (unref(currentVersion) === null) {
+		if (currentVersion.value === null) {
 			saveAndStay();
 		} else {
 			saveVersionAction('stay');
@@ -224,7 +224,7 @@ useShortcut(
 useShortcut(
 	'meta+shift+s',
 	() => {
-		if (unref(currentVersion) === null) {
+		if (currentVersion.value === null) {
 			saveAndAddNew();
 		} else {
 			saveVersionAction('quit');
@@ -236,7 +236,7 @@ useShortcut(
 useShortcut(
 	'meta+alt+s',
 	() => {
-		if (unref(currentVersion) !== null) {
+		if (currentVersion.value !== null) {
 			saveVersionAction(VERSION_KEY_PUBLISHED);
 		}
 	},
@@ -274,6 +274,8 @@ const isFormDisabled = computed(() => {
 	if (currentVersion.value !== null && updateVersionsAllowed.value) return false;
 	return true;
 });
+
+const isFormNonEditable = computed(() => shouldShowVersioning.value && currentVersion.value === null);
 
 const actualPrimaryKey = computed(() => {
 	if (unref(isSingleton)) {
@@ -530,7 +532,7 @@ async function saveAndStay() {
 
 async function saveAndAddNew() {
 	if (isSavable.value === false) return;
-	if (unref(currentVersion) !== null) return;
+	if (currentVersion.value !== null) return;
 
 	try {
 		await save();
@@ -733,6 +735,14 @@ function usePublishComparison() {
 
 	return { comparisonModalActive, comparableVersion, onVersionPublishCompare, onVersionPublishConfirm };
 }
+
+function editDraftVersion() {
+	const draftVersion = versions.value.find((version) => version.key === VERSION_KEY_DRAFT);
+
+	if (draftVersion) {
+		currentVersion.value = draftVersion;
+	}
+}
 </script>
 
 <template>
@@ -888,67 +898,76 @@ function usePublishComparison() {
 					</VCardActions>
 				</VCard>
 			</VDialog>
+			<template v-if="shouldShowVersioning">
+				<VButton v-if="currentVersion === null" rounded icon :tooltip="$t('edit_item')" small @click="editDraftVersion">
+					<VIcon name="edit" small />
+				</VButton>
+				<VButton
+					v-else
+					rounded
+					icon
+					:tooltip="$t('save_version')"
+					:loading="saveVersionLoading"
+					:disabled="!isSavable"
+					small
+					@click="saveVersionAction('stay')"
+				>
+					<VIcon name="beenhere" small />
 
-			<VButton
-				v-if="currentVersion === null"
-				rounded
-				icon
-				:tooltip="saveAllowed ? $t('save') : $t('not_allowed')"
-				:loading="saving"
-				:disabled="!isSavable"
-				small
-				@click="saveAndQuit"
-			>
-				<VIcon name="check" small />
+					<template #append-outer>
+						<VMenu
+							v-if="collectionInfo.meta && collectionInfo.meta.singleton !== true && isSavable === true"
+							show-arrow
+						>
+							<template #activator="{ toggle }">
+								<VIcon class="version-more-options" name="more_vert" clickable @click="toggle" />
+							</template>
 
-				<template #append-outer>
-					<SaveOptions
-						v-if="collectionInfo.meta && collectionInfo.meta.singleton !== true && isSavable === true"
-						:disabled-options="disabledOptions"
-						@save-and-stay="saveAndStay"
-						@save-and-add-new="saveAndAddNew"
-						@save-as-copy="saveAsCopyAndNavigate"
-						@discard-and-stay="discardAndStay"
-					/>
-				</template>
-			</VButton>
-			<VButton
-				v-else
-				rounded
-				icon
-				:tooltip="$t('save_version')"
-				:loading="saveVersionLoading"
-				:disabled="!isSavable"
-				small
-				@click="saveVersionAction('stay')"
-			>
-				<VIcon name="beenhere" small />
+							<VList>
+								<VListItem clickable @click="saveVersionAction(VERSION_KEY_PUBLISHED)">
+									<VListItemIcon><VIcon name="check" /></VListItemIcon>
+									<VListItemContent>{{ $t('save_and_return_to_published') }}</VListItemContent>
+									<VListItemHint>{{ translateShortcut(['meta', 'alt', 's']) }}</VListItemHint>
+								</VListItem>
+								<VListItem clickable @click="saveVersionAction('quit')">
+									<VListItemIcon><VIcon name="done_all" /></VListItemIcon>
+									<VListItemContent>{{ $t('save_and_quit') }}</VListItemContent>
+									<VListItemHint>{{ translateShortcut(['meta', 'shift', 's']) }}</VListItemHint>
+								</VListItem>
+								<VListItem clickable @click="discardAndStay">
+									<VListItemIcon><VIcon name="undo" /></VListItemIcon>
+									<VListItemContent>{{ $t('discard_all_changes') }}</VListItemContent>
+								</VListItem>
+							</VList>
+						</VMenu>
+					</template>
+				</VButton>
+			</template>
+			<template v-else>
+				<VButton
+					v-if="currentVersion === null"
+					rounded
+					icon
+					:tooltip="saveAllowed ? $t('save') : $t('not_allowed')"
+					:loading="saving"
+					:disabled="!isSavable"
+					small
+					@click="saveAndQuit"
+				>
+					<VIcon name="check" small />
 
-				<template #append-outer>
-					<VMenu v-if="collectionInfo.meta && collectionInfo.meta.singleton !== true && isSavable === true" show-arrow>
-						<template #activator="{ toggle }">
-							<VIcon class="version-more-options" name="more_vert" clickable @click="toggle" />
-						</template>
-
-						<VList>
-							<VListItem clickable @click="saveVersionAction(VERSION_KEY_PUBLISHED)">
-								<VListItemIcon><VIcon name="check" /></VListItemIcon>
-								<VListItemContent>{{ $t('save_and_return_to_published') }}</VListItemContent>
-								<VListItemHint>{{ translateShortcut(['meta', 'alt', 's']) }}</VListItemHint>
-							</VListItem>
-							<VListItem clickable @click="saveVersionAction('quit')">
-								<VListItemIcon><VIcon name="done_all" /></VListItemIcon>
-								<VListItemContent>{{ $t('save_and_quit') }}</VListItemContent>
-								<VListItemHint>{{ translateShortcut(['meta', 'shift', 's']) }}</VListItemHint>
-							</VListItem>
-							<VListItem clickable @click="discardAndStay">
-								<VListItemIcon><VIcon name="undo" /></VListItemIcon>
-								<VListItemContent>{{ $t('discard_all_changes') }}</VListItemContent>
-							</VListItem>
-						</VList>
-					</VMenu>
-				</template>
-			</VButton>
+					<template #append-outer>
+						<SaveOptions
+							v-if="collectionInfo.meta && collectionInfo.meta.singleton !== true && isSavable === true"
+							:disabled-options="disabledOptions"
+							@save-and-stay="saveAndStay"
+							@save-and-add-new="saveAndAddNew"
+							@save-as-copy="saveAsCopyAndNavigate"
+							@discard-and-stay="discardAndStay"
+						/>
+					</template>
+				</VButton>
+			</template>
 
 			<FlowDialogs v-bind="flowDialogsContext" />
 		</template>
@@ -977,10 +996,11 @@ function usePublishComparison() {
 					ref="form"
 					v-model="edits"
 					:autofocus="isNew"
-					:disabled="isFormDisabled"
+					:disabled="isFormDisabled || isFormNonEditable"
 					:loading="loading"
 					:initial-values="item"
 					:fields="fields"
+					:non-editable="isFormNonEditable"
 					:primary-key="internalPrimaryKey"
 					:collab-context="collabContext"
 					:validation-errors="validationErrors"
