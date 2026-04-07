@@ -248,7 +248,7 @@ useShortcut(
 useShortcut(
 	'meta+alt+p',
 	() => {
-		if (currentVersion.value !== null && !isCurrentVersionNew.value) {
+		if (currentVersion.value !== null && !isCurrentVersionNew.value && !collectionInfo.value?.meta?.singleton) {
 			onVersionPublishCompare(true);
 		}
 	},
