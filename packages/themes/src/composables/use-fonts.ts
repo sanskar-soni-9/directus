@@ -10,21 +10,19 @@ export const useFonts = (theme: MaybeRef<Theme | DeepPartial<Theme>>) => {
 		const paths: Map<string[], { family: string | null; weight: string | null }> = new Map();
 
 		const find = (schema: Record<string, unknown>, path: string[] = []) => {
+			console.log(schema, path);
+
 			for (const [key, value] of Object.entries(schema)) {
 				if (typeof value === 'object' && value !== null) {
-					if ('type' in value && value.type === 'object' && 'properties' in value) {
-						find(value.properties as Record<string, unknown>, [...path, key]);
-					}
-
-					if ('$ref' in value && value.$ref === 'FamilyName') {
+					if ('shape' in value) {
+						find(value.shape as Record<string, unknown>, [...path, key]);
+					} else if ('meta' in value && typeof value.meta === 'function' && value.meta()?.$ref === 'FamilyName') {
 						if (paths.has(path)) {
 							paths.set(path, { family: key, weight: paths.get(path)!.weight });
 						} else {
 							paths.set(path, { family: key, weight: null });
 						}
-					}
-
-					if ('$ref' in value && value.$ref === 'FontWeight') {
+					} else if ('meta' in value && typeof value.meta === 'function' && value.meta()?.$ref === 'FontWeight') {
 						if (paths.has(path)) {
 							paths.set(path, { family: paths.get(path)!.family, weight: key });
 						} else {
@@ -35,7 +33,7 @@ export const useFonts = (theme: MaybeRef<Theme | DeepPartial<Theme>>) => {
 			}
 		};
 
-		find(ThemeSchema.properties.rules.properties);
+		find(ThemeSchema.shape.rules.shape);
 
 		return paths;
 	});
