@@ -225,12 +225,16 @@ function applyOperatorToRaw(
 		dbQuery[logical].andWhere((query) => {
 			query.whereNull(raw).orWhere(raw, '=', '');
 		});
+
+		return;
 	}
 
 	if ((operator === '_nempty' && compareValue !== false) || (operator === '_empty' && compareValue === false)) {
 		dbQuery[logical].andWhere((query) => {
 			query.whereNotNull(raw).andWhere(raw, '!=', '');
 		});
+		
+		return;
 	}
 
 	// The following fields however, require a value to be run. If no value is passed, we
