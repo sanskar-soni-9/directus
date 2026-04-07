@@ -236,19 +236,9 @@ useShortcut(
 );
 
 useShortcut(
-	'meta+alt+s',
-	() => {
-		if (currentVersion.value !== null) {
-			saveVersionAction(VERSION_KEY_PUBLISHED);
-		}
-	},
-	form,
-);
-
-useShortcut(
 	'meta+shift+p',
 	() => {
-		if (!isPublishedItem.value && !isCurrentVersionNew.value) {
+		if (currentVersion.value !== null && !isCurrentVersionNew.value) {
 			onVersionPublishCompare();
 		}
 	},
@@ -258,7 +248,7 @@ useShortcut(
 useShortcut(
 	'meta+alt+p',
 	() => {
-		if (!isPublishedItem.value && !isCurrentVersionNew.value) {
+		if (currentVersion.value !== null && !isCurrentVersionNew.value) {
 			onVersionPublishCompare(true);
 		}
 	},
@@ -510,17 +500,14 @@ function useBreadcrumb() {
 	return { breadcrumb };
 }
 
-async function saveVersionAction(action: typeof VERSION_KEY_PUBLISHED | 'stay' | 'quit') {
+async function saveVersionAction(action: 'stay' | 'quit') {
 	if (isSavable.value === false) return;
 
 	try {
 		await saveVersion(edits, item, actualPrimaryKey.value);
 		edits.value = {};
 
-		if (action === VERSION_KEY_PUBLISHED) {
-			currentVersion.value = null;
-			refresh();
-		} else if (action === 'stay') {
+		if (action === 'stay') {
 			if (!isNew.value) {
 				refresh();
 				revisionsSidebarDetailRef.value?.refresh?.();
