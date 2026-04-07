@@ -956,7 +956,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 						icon
 						small
 						:disabled="!isPublishAllowed"
-						:tooltip="`${$t('publish_version')} [${translateShortcut(['meta', 'shift', 'p'])}]`"
+						:tooltip="`${$t('publish')} [${translateShortcut(['meta', 'shift', 'p'])}]`"
 						@click="onVersionPublishCompare"
 					>
 						<VIcon name="public" small />
