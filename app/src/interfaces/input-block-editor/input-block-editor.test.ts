@@ -70,6 +70,64 @@ describe('InputBlockEditor', () => {
 		wrapper.unmount();
 	});
 
+	it('should not re-render when value changes during readOnly mode', async () => {
+		// This fixes a regression where using save and stay within a translation field using the block editor would result in data loss.
+		let isReadOnly = false;
+		const render = vi.fn().mockResolvedValue(undefined);
+
+		vi.mocked(EditorJS).mockImplementation(
+			() =>
+				({
+					isReady: Promise.resolve(),
+					render,
+					clear: vi.fn(),
+					destroy: vi.fn(),
+					focus: vi.fn(),
+					on: vi.fn(),
+					saver: { save: vi.fn().mockResolvedValue({ blocks: [] }) },
+					readOnly: {
+						toggle: vi.fn((val: boolean) => {
+							isReadOnly = val;
+						}),
+						get isEnabled() {
+							return isReadOnly;
+						},
+					},
+				}) as any,
+		);
+
+		const wrapper = mount(InputBlockEditor, {
+			props: {
+				disabled: false,
+				value: { blocks: [{ type: 'paragraph', data: { text: 'Hello World' } }] },
+			},
+			global: {
+				directives: { 'prevent-focusout': {} },
+				stubs: { VDrawer: true, VUpload: true },
+			},
+		});
+
+		await flushPromises();
+		render.mockClear(); // ignore initial render from onMounted
+
+		// Simulate save-and-stay: field becomes disabled while the server processes the save
+		await wrapper.setProps({ disabled: true });
+		await flushPromises();
+
+		// Server responds with saved value while editor is still in readOnly mode
+		await wrapper.setProps({ value: { blocks: [{ type: 'paragraph', data: { text: 'Hello World updated' } }] } });
+		await flushPromises();
+
+		// render() must NOT be called while readOnly is enabled — calling it corrupts EditorJS state
+		expect(render).not.toHaveBeenCalled();
+
+		// Save completes — editor returns to editable mode
+		await wrapper.setProps({ disabled: false });
+		await flushPromises();
+
+		wrapper.unmount();
+	});
+
 	it('should not clear content when value becomes null while disabled', async () => {
 		// This test should prevent a regression that results in data loss when the value is temporarily null and the field is disabled
 		const clear = vi.fn();
