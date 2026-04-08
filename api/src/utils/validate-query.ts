@@ -5,6 +5,7 @@ import Joi from 'joi';
 import { isPlainObject, uniq } from 'lodash-es';
 import { stringify } from 'wellknown';
 import { parseJsonFunction } from '../database/helpers/fn/json/parse-function.js';
+import { parseJsonPath } from '../database/helpers/fn/json/parse-function.js';
 import { calculateFieldDepth } from './calculate-field-depth.js';
 import { extractFunctionName } from './extract-function-name.js';
 import { getFieldRelationalDepth } from './get-field-relational-depth.js';
@@ -85,6 +86,9 @@ function validateFilter(filter: Filter) {
 				case '_intersects_bbox':
 				case '_nintersects_bbox':
 					validateGeometry(value, key);
+					break;
+				case '_json':
+					validateJsonFilter(value);
 					break;
 				case '_none':
 				case '_some':
@@ -172,6 +176,47 @@ export function validateGeometry(value: any, key: string) {
 	}
 
 	return true;
+}
+
+function validateJsonFilter(value: unknown) {
+	if (!isPlainObject(value)) {
+		throw new InvalidQueryError({ reason: `"_json" filter value must be an object` });
+	}
+
+	for (const [path, innerFilter] of Object.entries(value as Record<string, unknown>)) {
+		if (path.length === 0) {
+			throw new InvalidQueryError({ reason: `"_json" path key must be a non-empty string` });
+		}
+
+		if (path === '_or' || path === '_and') {
+			if (!Array.isArray(innerFilter)) {
+				throw new InvalidQueryError({ reason: `"_json" logical operator "${path}" must be an array` });
+			}
+
+			for (const subFilter of innerFilter) {
+				validateJsonFilter(subFilter);
+			}
+
+			continue;
+		}
+
+		// Throws for invalid or unsupported json paths
+		parseJsonPath(path);
+
+		if (!isPlainObject(innerFilter)) {
+			throw new InvalidQueryError({ reason: `"_json" inner filter for path "${path}" must be an object` });
+		}
+
+		const nestedPathKey = Object.keys(innerFilter as object).find((k) => !k.startsWith('_'));
+
+		if (nestedPathKey) {
+			throw new InvalidQueryError({
+				reason: `"_json" path "${path}" cannot contain a nested path "${nestedPathKey}"; use a single flat path like "${path}.${nestedPathKey}"`,
+			});
+		}
+
+		validateFilter(innerFilter as Filter);
+	}
 }
 
 function validateAlias(alias: any) {
