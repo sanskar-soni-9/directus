@@ -31,7 +31,7 @@ test('no sorting', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schema, queryBuilder, [], null, 'articles', {});
+	applySort(db, schema, queryBuilder, [], 'articles', {});
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -48,7 +48,7 @@ test('sorting of id', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schema, queryBuilder, ['id'], null, 'articles', {});
+	applySort(db, schema, queryBuilder, ['id'], 'articles', {});
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -65,7 +65,7 @@ test('sorting of id desc', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schema, queryBuilder, ['-id'], null, 'articles', {});
+	applySort(db, schema, queryBuilder, ['-id'], 'articles', {});
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -82,7 +82,7 @@ test('sorting of id and title', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schema, queryBuilder, ['id', 'title'], null, 'articles', {});
+	applySort(db, schema, queryBuilder, ['id', 'title'], 'articles', {});
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -99,17 +99,7 @@ test('sorting of title with unused aggregation', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(
-		db,
-		schema,
-		queryBuilder,
-		['title'],
-		{
-			count: ['*'],
-		},
-		'articles',
-		{},
-	);
+	applySort(db, schema, queryBuilder, ['title'], 'articles', {}, { aggregate: { count: ['*'] } });
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -126,17 +116,7 @@ test('sorting of count(*) with aggregation', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(
-		db,
-		schema,
-		queryBuilder,
-		['count'],
-		{
-			count: ['*'],
-		},
-		'articles',
-		{},
-	);
+	applySort(db, schema, queryBuilder, ['count'], 'articles', {}, { aggregate: { count: ['*'] } });
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -154,7 +134,7 @@ test('sorting of count(links)', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schema, queryBuilder, ['count(links)'], undefined, 'articles', {});
+	applySort(db, schema, queryBuilder, ['count(links)'], 'articles', {});
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -175,17 +155,7 @@ test('sorting of count(links) with aggregation', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(
-		db,
-		schema,
-		queryBuilder,
-		['links'],
-		{
-			count: ['links'],
-		},
-		'articles',
-		{},
-	);
+	applySort(db, schema, queryBuilder, ['links'], 'articles', {}, { aggregate: { count: ['links'] } });
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -205,7 +175,7 @@ test('sort by json() function asc', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schemaWithJson, queryBuilder, ['json(metadata, color)'], null, 'articles', {});
+	applySort(db, schemaWithJson, queryBuilder, ['json(metadata, color)'], 'articles', {});
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -222,7 +192,7 @@ test('sort by json() function desc', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schemaWithJson, queryBuilder, ['-json(metadata, color)'], null, 'articles', {});
+	applySort(db, schemaWithJson, queryBuilder, ['-json(metadata, color)'], 'articles', {});
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -239,7 +209,7 @@ test('sort by json() with dotted path does not break tokenisation', async () => 
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schemaWithJson, queryBuilder, ['json(metadata, settings.theme)'], null, 'articles', {});
+	applySort(db, schemaWithJson, queryBuilder, ['json(metadata, settings.theme)'], 'articles', {});
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -256,9 +226,17 @@ test('sort by alias resolving to json()', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schemaWithJson, queryBuilder, ['myColor'], null, 'articles', {}, false, {
-		myColor: 'json(metadata, color)',
-	});
+	applySort(
+		db,
+		schemaWithJson,
+		queryBuilder,
+		['myColor'],
+		'articles',
+		{},
+		{
+			fieldAliasMap: { myColor: 'json(metadata, color)' },
+		},
+	);
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -275,9 +253,17 @@ test('sort desc by alias resolving to json()', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schemaWithJson, queryBuilder, ['-myColor'], null, 'articles', {}, false, {
-		myColor: 'json(metadata, color)',
-	});
+	applySort(
+		db,
+		schemaWithJson,
+		queryBuilder,
+		['-myColor'],
+		'articles',
+		{},
+		{
+			fieldAliasMap: { myColor: 'json(metadata, color)' },
+		},
+	);
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -294,9 +280,17 @@ test('sort by auto-generated json alias regenerates extraction expression', asyn
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schemaWithJson, queryBuilder, ['metadata_color_json'], null, 'articles', {}, false, undefined, {
-		metadata_color_json: 'json(metadata, color)',
-	});
+	applySort(
+		db,
+		schemaWithJson,
+		queryBuilder,
+		['metadata_color_json'],
+		'articles',
+		{},
+		{
+			fieldAliasMap: { metadata_color_json: 'json(metadata, color)' },
+		},
+	);
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);
@@ -313,7 +307,7 @@ test('relational sort with json() generates JOIN and extraction expression', asy
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
 
-	applySort(db, schemaWithJson, queryBuilder, ['category_id.json(metadata, color)'], null, 'articles', {});
+	applySort(db, schemaWithJson, queryBuilder, ['category_id.json(metadata, color)'], 'articles', {});
 
 	const tracker = createTracker(db);
 	tracker.on.select('*').response([]);

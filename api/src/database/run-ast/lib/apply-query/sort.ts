@@ -10,18 +10,22 @@ import { addJoin } from './add-join.js';
 
 export type ColumnSortRecord = { order: 'asc' | 'desc'; column: string };
 
+type ApplySortOptions = {
+	aggregate?: Aggregate | null | undefined;
+	returnRecords?: boolean;
+	fieldAliasMap?: Record<string, string>;
+};
+
 export function applySort(
 	knex: Knex,
 	schema: SchemaOverview,
 	rootQuery: Knex.QueryBuilder,
 	sort: string[],
-	aggregate: Aggregate | null | undefined,
 	collection: string,
 	aliasMap: AliasMap,
-	returnRecords = false,
-	userAlias?: Record<string, string>,
-	jsonAliasMap?: Record<string, string>,
+	options?: ApplySortOptions,
 ) {
+	const { aggregate, returnRecords = false, fieldAliasMap } = options ?? {};
 	const relations: Relation[] = schema.relations;
 	let hasJoins = false;
 	let hasMultiRelationalSort = false;
@@ -71,24 +75,14 @@ export function applySort(
 
 		if (column.length === 1) {
 			const rawField = column[0]!;
-			// Resolve user-defined alias before processing
-			const resolvedField = userAlias?.[rawField] ?? rawField;
+			// Resolve via alias map (covers both user-defined aliases and auto-generated json aliases)
+			const resolvedField = fieldAliasMap?.[rawField] ?? rawField;
 
 			// Direct json() call or alias that resolves to json()
 			if (extractFunctionName(resolvedField) === 'json') {
 				return {
 					order,
 					column: returnRecords ? resolvedField : (getColumn(knex, collection, resolvedField, false, schema) as any),
-				};
-			}
-
-			// Sort by auto-generated json alias (e.g., metadata_color_json)
-			const jsonFnName = jsonAliasMap?.[rawField];
-
-			if (jsonFnName) {
-				return {
-					order,
-					column: returnRecords ? jsonFnName : (getColumn(knex, collection, jsonFnName, false, schema) as any),
 				};
 			}
 

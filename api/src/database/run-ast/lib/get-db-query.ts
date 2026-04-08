@@ -98,26 +98,19 @@ export function getDBQuery(
 	let hasMultiRelationalSort: boolean | undefined;
 
 	if (queryCopy.sort) {
-		const jsonAliasMap: Record<string, string> = {};
+		const fieldAliasMap: Record<string, string> = { ...(queryCopy.alias ?? {}) };
 
 		for (const node of fieldNodes) {
 			if (node.type === 'functionField' && extractFunctionName(node.name) === 'json') {
-				jsonAliasMap[applyFunctionToColumnName(node.fieldKey)] = node.name;
+				fieldAliasMap[applyFunctionToColumnName(node.fieldKey)] = node.name;
 			}
 		}
 
-		const sortResult = applySort(
-			knex,
-			schema,
-			dbQuery,
-			queryCopy.sort,
-			queryCopy.aggregate,
-			table,
-			aliasMap,
-			true,
-			queryCopy.alias ?? undefined,
-			jsonAliasMap,
-		);
+		const sortResult = applySort(knex, schema, dbQuery, queryCopy.sort, table, aliasMap, {
+			aggregate: queryCopy.aggregate,
+			returnRecords: true,
+			fieldAliasMap,
+		});
 
 		if (sortResult) {
 			sortRecords = sortResult.sortRecords;
