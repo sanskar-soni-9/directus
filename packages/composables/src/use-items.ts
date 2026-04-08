@@ -37,13 +37,14 @@ export type ComputedQuery = {
 	filterSystem?: Ref<Query['filter']> | ComputedRef<Query['filter']> | WritableComputedRef<Query['filter']>;
 	alias?: Ref<Query['alias']> | ComputedRef<Query['alias']> | WritableComputedRef<Query['alias']>;
 	deep?: Ref<Query['deep']> | ComputedRef<Query['deep']> | WritableComputedRef<Query['deep']>;
+	version?: Ref<Query['version']> | ComputedRef<Query['version']> | WritableComputedRef<Query['version']>;
 };
 
 export function useItems(collection: Ref<string | null>, query: ComputedQuery): UsableItems {
 	const api = useApi();
 	const { primaryKeyField } = useCollection(collection);
 
-	const { fields, limit, sort, search, filter, page, filterSystem, alias, deep } = query;
+	const { fields, limit, sort, search, filter, page, filterSystem, alias, deep, version } = query;
 
 	const endpoint = computed(() => {
 		if (!collection.value) return null;
@@ -74,16 +75,19 @@ export function useItems(collection: Ref<string | null>, query: ComputedQuery): 
 
 	// Throttle is used to ensure we send the first trigger instantly, debounce will not.
 	const fetchItems = throttle((shouldUpdateCount: boolean) => {
-		Promise.all([getItems(), shouldUpdateCount ? getItemCount() : Promise.resolve()]);
+		Promise.all([getItems(), shouldUpdateCount && !unref(version) ? getItemCount() : Promise.resolve()]);
 	}, 500);
 
 	watch(
-		[collection, limit, sort, search, filter, fields, page, toRef(alias), toRef(deep)],
+		[collection, limit, sort, search, filter, fields, page, toRef(alias), toRef(deep), toRef(version)],
 		async (after, before) => {
 			if (isEqual(after, before)) return;
 
 			const [newCollection, newLimit, newSort, newSearch, newFilter] = after;
 			const [oldCollection, oldLimit, oldSort, oldSearch, oldFilter] = before;
+
+			const newVersion = after[9];
+			const oldVersion = before[9];
 
 			if (!newCollection || !query) return;
 
@@ -104,7 +108,10 @@ export function useItems(collection: Ref<string | null>, query: ComputedQuery): 
 
 			// determine if the count needs to be updated based on changes to a collection, filter, or search
 			const shouldUpdateCount =
-				newCollection !== oldCollection || !isEqual(newFilter, oldFilter) || newSearch !== oldSearch;
+				newCollection !== oldCollection ||
+				!isEqual(newFilter, oldFilter) ||
+				newSearch !== oldSearch ||
+				!isEqual(newVersion, oldVersion);
 
 			fetchItems(shouldUpdateCount);
 		},
@@ -112,11 +119,11 @@ export function useItems(collection: Ref<string | null>, query: ComputedQuery): 
 	);
 
 	watch(
-		[collection, toRef(filterSystem)],
+		[collection, toRef(filterSystem), toRef(version)],
 		async (after, before) => {
 			if (isEqual(after, before)) return;
 
-			getTotalCount();
+			if (!unref(version)) getTotalCount();
 		},
 		{ deep: true, immediate: true },
 	);
@@ -179,6 +186,7 @@ export function useItems(collection: Ref<string | null>, query: ComputedQuery): 
 					search: unref(search),
 					filter: unref(filter),
 					deep: unref(deep),
+					version: unref(version),
 				},
 				signal: existingRequests.items.signal,
 			});
@@ -204,6 +212,13 @@ export function useItems(collection: Ref<string | null>, query: ComputedQuery): 
 			}
 
 			items.value = fetchedItems;
+
+			// When fetching versioned items, derive counts client-side
+			// because aggregate endpoints don't support the version param
+			if (unref(version)) {
+				itemCount.value = fetchedItems.length;
+				totalCount.value = fetchedItems.length;
+			}
 
 			if (page && fetchedItems.length === 0 && page?.value !== 1) {
 				page.value = 1;

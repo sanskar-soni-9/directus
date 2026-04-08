@@ -15,13 +15,19 @@ import VCardActions from '@/components/v-card-actions.vue';
 import VCardText from '@/components/v-card-text.vue';
 import VCardTitle from '@/components/v-card-title.vue';
 import VCard from '@/components/v-card.vue';
+import VChip from '@/components/v-chip.vue';
 import VDialog from '@/components/v-dialog.vue';
 import VError from '@/components/v-error.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
 import VInfo from '@/components/v-info.vue';
+import VListItemContent from '@/components/v-list-item-content.vue';
+import VListItem from '@/components/v-list-item.vue';
+import VList from '@/components/v-list.vue';
+import VMenu from '@/components/v-menu.vue';
 import { useFlows } from '@/composables/use-flows';
 import { useCollectionPermissions } from '@/composables/use-permissions';
 import { usePreset } from '@/composables/use-preset';
+import { useVersionQuery } from '@/composables/use-version-query';
 import { usePermissionsStore } from '@/stores/permissions';
 import { getCollectionRoute, getItemRoute } from '@/utils/get-route';
 import { unexpectedError } from '@/utils/unexpected-error';
@@ -91,6 +97,15 @@ const {
 } = useBatch();
 
 const { bookmarkDialogActive, creatingBookmark, createBookmark } = useBookmarks();
+
+const versionKey = useVersionQuery();
+
+const isVersioned = computed(() => !!currentCollection.value?.meta?.versioning);
+const isDraftMode = computed(() => versionKey.value === VERSION_KEY_DRAFT);
+
+watch(versionKey, () => {
+	selection.value = [];
+});
 
 watch(
 	collection,
@@ -333,6 +348,33 @@ function clearFilters() {
 			<template #headline>
 				<VBreadcrumb v-if="bookmark" :items="breadcrumb" />
 				<VBreadcrumb v-else :items="[{ name: $t('content'), to: '/content' }]" />
+			</template>
+
+			<template #title:append>
+				<VMenu v-if="isVersioned" show-arrow placement="bottom">
+					<template #activator="{ toggle, active }">
+						<VChip
+							small
+							clickable
+							:label="false"
+							class="version-select-activator"
+							:class="{ active }"
+							@click="toggle"
+						>
+							{{ isDraftMode ? $t('draft') : $t('published') }}
+							<VIcon small name="arrow_drop_down" />
+						</VChip>
+					</template>
+
+					<VList>
+						<VListItem clickable :active="!isDraftMode" @click="versionKey = null">
+							<VListItemContent>{{ $t('published') }}</VListItemContent>
+						</VListItem>
+						<VListItem clickable :active="isDraftMode" @click="versionKey = VERSION_KEY_DRAFT">
+							<VListItemContent>{{ $t('draft') }}</VListItemContent>
+						</VListItem>
+					</VList>
+				</VMenu>
 			</template>
 
 			<template #title-outer:append>
@@ -639,6 +681,28 @@ function clearFilters() {
 
 	.saved {
 		color: var(--theme--primary);
+	}
+}
+
+.version-select-activator {
+	--v-chip-padding: 0 0.3125rem 0 0.6875rem;
+	--v-chip-color: var(--theme--foreground-accent);
+	--v-chip-color-hover: var(--v-chip-color);
+	--v-chip-background-color-hover: color-mix(
+		in srgb,
+		var(--theme--background),
+		var(--theme--foreground) 10%
+	);
+	margin-inline-start: 0.5rem;
+
+	&.active {
+		--v-chip-color: var(--foreground-inverted);
+		--v-chip-background-color: var(--theme--primary);
+		--v-chip-background-color-hover: var(--v-chip-background-color);
+	}
+
+	&.v-chip {
+		border-width: 0;
 	}
 }
 </style>
