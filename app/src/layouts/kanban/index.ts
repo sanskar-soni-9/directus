@@ -164,6 +164,7 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 			filter,
 			search,
 			filterSystem,
+			version: versionKey,
 		});
 
 		watch(ungroupedDisabled, (disabled) => {

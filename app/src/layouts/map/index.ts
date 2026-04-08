@@ -167,6 +167,7 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 				filter: filterWithLocation,
 				fields: queryFields,
 				filterSystem,
+				version: versionKey,
 			});
 
 		const geojson = ref<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });

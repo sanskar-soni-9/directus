@@ -88,6 +88,7 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 			filter,
 			search,
 			filterSystem,
+			version: versionKey,
 		});
 
 		const showingCount = computed(() => {

@@ -143,6 +143,7 @@ export default defineLayout<LayoutOptions>({
 			filter: filterWithCalendarView,
 			search: search,
 			filterSystem,
+			version: versionKey,
 		});
 
 		const events = computed<EventInput>(
