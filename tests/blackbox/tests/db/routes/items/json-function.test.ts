@@ -579,7 +579,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 
 				describe('sorts by json() with dotted path', () => {
 					test.each(vendors)('%s', async (vendor) => {
-						// Widths: Alpha=10, Beta=15, Gamma=12, Zeta=null → sorted: 10, 12, 15, null
+						// Widths: Alpha=10, Beta=15, Gamma=12, Zeta=null
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -592,8 +592,12 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 						expect(response.statusCode).toEqual(200);
 						expect(response.body.data.length).toBe(4);
 
-						// First three items should have widths 10, 12, 15 in numeric order
-						const widths = response.body.data.slice(0, 3).map((item: any) => Number(item.width));
+						// Non-null widths should be sorted numerically ascending (null position varies by database)
+						const widths = response.body.data
+							.map((item: any) => item.width)
+							.filter((w: any) => w !== null)
+							.map((w: any) => Number(w));
+
 						expect(widths).toEqual([10, 12, 15]);
 					});
 				});
