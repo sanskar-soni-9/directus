@@ -353,14 +353,7 @@ function clearFilters() {
 			<template #title:append>
 				<VMenu v-if="isVersioned" show-arrow placement="bottom">
 					<template #activator="{ toggle, active }">
-						<VChip
-							small
-							clickable
-							:label="false"
-							class="version-select-activator"
-							:class="{ active }"
-							@click="toggle"
-						>
+						<VChip small clickable :label="false" class="version-select-activator" :class="{ active }" @click="toggle">
 							{{ isDraftMode ? $t('draft') : $t('published') }}
 							<VIcon small name="arrow_drop_down" />
 						</VChip>
@@ -561,11 +554,17 @@ function clearFilters() {
 				</template>
 
 				<template #no-items>
-					<VInfo :title="$t('item_count', 0)" :icon="currentCollection.icon" center>
-						{{ $t('no_items_copy') }}
+					<VInfo
+						:title="isDraftMode ? $t('no_items_draft') : $t('item_count', 0)"
+						:icon="currentCollection.icon"
+						center
+					>
+						{{ isDraftMode ? $t('no_items_draft_copy') : $t('no_items_copy') }}
 
 						<template v-if="createAllowed" #append>
-							<VButton :to="getItemRoute(collection, '+')">{{ $t('create_item') }}</VButton>
+							<VButton :to="addNewLink">
+								{{ $t('create_item') }}
+							</VButton>
 						</template>
 					</VInfo>
 				</template>
@@ -688,11 +687,7 @@ function clearFilters() {
 	--v-chip-padding: 0 0.3125rem 0 0.6875rem;
 	--v-chip-color: var(--theme--foreground-accent);
 	--v-chip-color-hover: var(--v-chip-color);
-	--v-chip-background-color-hover: color-mix(
-		in srgb,
-		var(--theme--background),
-		var(--theme--foreground) 10%
-	);
+	--v-chip-background-color-hover: color-mix(in srgb, var(--theme--background), var(--theme--foreground) 10%);
 	margin-inline-start: 0.5rem;
 
 	&.active {
