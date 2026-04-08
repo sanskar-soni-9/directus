@@ -248,7 +248,7 @@ const menuActive = computed(() => imageDialogOpen.value);
 
 				<VButton
 					v-if="toolbar?.includes('bold')"
-					v-tooltip="$t('wysiwyg_options.bold') + ' - ' + translateShortcut(['meta', 'b'])"
+					v-tooltip="{ text: $t('wysiwyg_options.bold'), kbd: ['meta', 'b'] }"
 					:disabled="disabled"
 					small
 					icon
@@ -258,7 +258,7 @@ const menuActive = computed(() => imageDialogOpen.value);
 				</VButton>
 				<VButton
 					v-if="toolbar?.includes('italic')"
-					v-tooltip="$t('wysiwyg_options.italic') + ' - ' + translateShortcut(['meta', 'i'])"
+					v-tooltip="{ text: $t('wysiwyg_options.italic'), kbd: ['meta', 'i'] }"
 					:disabled="disabled"
 					small
 					icon
@@ -268,7 +268,7 @@ const menuActive = computed(() => imageDialogOpen.value);
 				</VButton>
 				<VButton
 					v-if="toolbar?.includes('strikethrough')"
-					v-tooltip="$t('wysiwyg_options.strikethrough') + ' - ' + translateShortcut(['meta', 'alt', 'd'])"
+					v-tooltip="{ text: $t('wysiwyg_options.strikethrough'), kbd: ['meta', 'alt', 'd'] }"
 					:disabled="disabled"
 					small
 					icon
@@ -298,7 +298,7 @@ const menuActive = computed(() => imageDialogOpen.value);
 				</VButton>
 				<VButton
 					v-if="toolbar?.includes('blockquote')"
-					v-tooltip="$t('wysiwyg_options.blockquote') + ' - ' + translateShortcut(['meta', 'alt', 'q'])"
+					v-tooltip="{ text: $t('wysiwyg_options.blockquote'), kbd: ['meta', 'alt', 'q'] }"
 					:disabled="disabled"
 					small
 					icon
@@ -308,7 +308,7 @@ const menuActive = computed(() => imageDialogOpen.value);
 				</VButton>
 				<VButton
 					v-if="toolbar?.includes('code')"
-					v-tooltip="$t('wysiwyg_options.codeblock') + ' - ' + translateShortcut(['meta', 'alt', 'c'])"
+					v-tooltip="{ text: $t('wysiwyg_options.codeblock'), kbd: ['meta', 'alt', 'c'] }"
 					:disabled="disabled"
 					small
 					icon
@@ -318,7 +318,7 @@ const menuActive = computed(() => imageDialogOpen.value);
 				</VButton>
 				<VButton
 					v-if="toolbar?.includes('link')"
-					v-tooltip="$t('wysiwyg_options.link') + ' - ' + translateShortcut(['meta', 'k'])"
+					v-tooltip="{ text: $t('wysiwyg_options.link'), kbd: ['meta', 'k'] }"
 					:disabled="disabled"
 					small
 					icon
