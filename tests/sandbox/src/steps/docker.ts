@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
@@ -10,6 +10,13 @@ const fileName = fileURLToPath(import.meta.url);
 const folderName = dirname(fileName);
 
 export async function dockerUp(database: Database, opts: Options, env: Env, logger: Logger) {
+	const result = spawnSync('docker', ['ps']);
+
+	if (result.status !== 0) {
+		logger.error('Docker is not running or installation is missing');
+		process.exit(1);
+	}
+
 	const start = performance.now();
 	logger.info('Starting up Docker containers');
 
@@ -51,7 +58,9 @@ export async function dockerUp(database: Database, opts: Options, env: Env, logg
 	});
 
 	logger.pipe(docker.stdout, 'debug');
-	logger.pipe(docker.stderr, 'error');
+	// Docker logs debug info to stderr, even with COMPOSE_CONSOLE_LOGGING=1 for some reason.
+	// Should be changed to error once that is fixed.
+	logger.pipe(docker.stderr, 'debug');
 
 	await new Promise((resolve) => docker!.on('close', resolve));
 
@@ -79,7 +88,7 @@ export async function dockerDown(project: string, env: Env, logger: Logger) {
 	});
 
 	logger.pipe(docker.stdout, 'debug');
-	logger.pipe(docker.stderr, 'error');
+	logger.pipe(docker.stderr, 'debug');
 
 	await new Promise((resolve) => docker.on('close', resolve));
 
