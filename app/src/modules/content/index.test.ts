@@ -9,8 +9,13 @@ vi.mock('@/stores/collections', () => ({
 
 vi.mock('@/api', () => ({ default: { get: vi.fn() } }));
 
-const { stripOrphanedVersionId, stripVersionOnNonVersioned, stripVersionIdOnRealItem, validateItemlessDraft } =
-	await import('./index');
+const {
+	enterDraftContext,
+	stripOrphanedVersionId,
+	stripVersionOnNonVersioned,
+	stripVersionIdOnRealItem,
+	validateItemlessDraft,
+} = await import('./index');
 
 function makeRoute(overrides: {
 	collection?: string | string[];
@@ -29,6 +34,84 @@ function makeRoute(overrides: {
 
 	return { params, query, fullPath: computedFullPath };
 }
+
+describe('enterDraftContext', () => {
+	beforeEach(() => mockGetCollection.mockReset());
+
+	it('adds version=draft for new items (primaryKey="+") on versioned collections', () => {
+		mockGetCollection.mockReturnValue({ meta: { versioning: true } });
+
+		const to = makeRoute({
+			primaryKey: '+',
+			query: {},
+			fullPath: '/content/posts/+',
+		});
+
+		const result = enterDraftContext(to, {} as any, vi.fn());
+		expect(result).toMatchObject({ query: { version: 'draft' } });
+	});
+
+	it('passes through when already in version context', () => {
+		mockGetCollection.mockReturnValue({ meta: { versioning: true } });
+
+		const to = makeRoute({
+			primaryKey: '+',
+			query: { version: 'draft' },
+			fullPath: '/content/posts/+?version=draft',
+		});
+
+		expect(enterDraftContext(to, {} as any, vi.fn())).toBeUndefined();
+	});
+
+	it('passes through when versioning is disabled', () => {
+		mockGetCollection.mockReturnValue({ meta: { versioning: false } });
+
+		const to = makeRoute({
+			primaryKey: '+',
+			query: {},
+			fullPath: '/content/posts/+',
+		});
+
+		expect(enterDraftContext(to, {} as any, vi.fn())).toBeUndefined();
+	});
+
+	it('adds version=draft for singleton collections with versioning', () => {
+		mockGetCollection.mockReturnValue({ meta: { versioning: true, singleton: true } });
+
+		const to = {
+			params: { collection: 'settings' },
+			query: {},
+			fullPath: '/content/settings',
+		};
+
+		const result = enterDraftContext(to as any, {} as any, vi.fn());
+		expect(result).toMatchObject({ query: { version: 'draft' } });
+	});
+
+	it('passes through for singleton without versioning', () => {
+		mockGetCollection.mockReturnValue({ meta: { versioning: false, singleton: true } });
+
+		const to = {
+			params: { collection: 'settings' },
+			query: {},
+			fullPath: '/content/settings',
+		};
+
+		expect(enterDraftContext(to as any, {} as any, vi.fn())).toBeUndefined();
+	});
+
+	it('passes through for singleton already in version context', () => {
+		mockGetCollection.mockReturnValue({ meta: { versioning: true, singleton: true } });
+
+		const to = {
+			params: { collection: 'settings' },
+			query: { version: 'draft' },
+			fullPath: '/content/settings?version=draft',
+		};
+
+		expect(enterDraftContext(to as any, {} as any, vi.fn())).toBeUndefined();
+	});
+});
 
 describe('stripOrphanedVersionId', () => {
 	it('strips versionId when version is absent', () => {

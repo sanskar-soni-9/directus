@@ -18,7 +18,6 @@ import { removeQueryFromPath } from '@/utils/remove-query-from-path';
 import RouterPass from '@/utils/router-passthrough';
 
 export const enterDraftContext: NavigationGuard = (to) => {
-	if (typeof to.params.primaryKey !== 'string' || to.params.primaryKey !== '+') return;
 	if (to.query.version) return; // already in version context
 
 	const collectionsStore = useCollectionsStore();
@@ -27,6 +26,11 @@ export const enterDraftContext: NavigationGuard = (to) => {
 
 	const collectionInfo = collectionsStore.getCollection(collection);
 	if (!collectionInfo?.meta?.versioning) return;
+
+	const isSingleton = !!collectionInfo.meta?.singleton;
+	const isNewItem = typeof to.params.primaryKey === 'string' && to.params.primaryKey === '+';
+
+	if (!isSingleton && !isNewItem) return;
 
 	return { ...to, query: { ...to.query, version: VERSION_KEY_DRAFT } };
 };
@@ -208,7 +212,7 @@ export default defineModule({
 							archive,
 						};
 					},
-					beforeEnter: checkForSystem,
+					beforeEnter: [checkForSystem, enterDraftContext, stripVersionOnNonVersioned],
 				},
 				{
 					name: 'content-item',
