@@ -12,6 +12,7 @@ import { ASSET_TRANSFORM_QUERY_KEYS, SYSTEM_ASSET_ALLOW_LIST } from '../constant
 import getDatabase from '../database/index.js';
 import { useLogger } from '../logger/index.js';
 import useCollection from '../middleware/use-collection.js';
+import { validateAccess } from '../permissions/modules/validate-access/validate-access.js';
 import { AssetsService } from '../services/assets.js';
 import { FilesService } from '../services/files.js';
 import { PayloadService } from '../services/payload.js';
@@ -269,22 +270,27 @@ router.get(
 			const ifModifiedSince = req.headers['if-modified-since'];
 
 			if (ifNoneMatch || ifModifiedSince) {
+				if (req.accountability) {
+					await validateAccess(
+						{
+							accountability: req.accountability,
+							action: 'read',
+							collection: 'directus_files',
+							primaryKeys: [id],
+						},
+						{
+							knex: getDatabase(),
+							schema: req.schema,
+						},
+					);
+				}
+
 				const filesService = new FilesService({
-					accountability: req.accountability,
+					accountability: null,
 					schema: req.schema,
 				});
 
-				let fileRecord = await filesService.readOne(id, { fields: ['modified_on'] });
-
-				// If modified_on is not available due to field level permissions, we fetch as admin
-				if (!fileRecord?.modified_on) {
-					const adminFilesService = new FilesService({
-						accountability: null,
-						schema: req.schema,
-					});
-
-					fileRecord = await adminFilesService.readOne(id, { fields: ['modified_on'] });
-				}
+				const fileRecord = await filesService.readOne(id, { fields: ['modified_on'] });
 
 				if (fileRecord?.modified_on) {
 					const modifiedOnTime = new Date(fileRecord.modified_on).getTime();
