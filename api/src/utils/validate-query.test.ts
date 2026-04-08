@@ -152,6 +152,60 @@ describe('alias relational depth', async () => {
 	});
 });
 
+describe('sort validation', async () => {
+	const { validateQuery } = await import('./validate-query.js');
+
+	test('accepts plain field in sort', () => {
+		expect(() => validateQuery({ sort: ['title'] })).not.toThrow();
+	});
+
+	test('accepts plain field with leading dash in sort', () => {
+		expect(() => validateQuery({ sort: ['-title'] })).not.toThrow();
+	});
+
+	test('accepts valid json() in sort', () => {
+		expect(() => validateQuery({ sort: ['json(metadata, color)'] })).not.toThrow();
+	});
+
+	test('accepts valid json() with leading dash in sort', () => {
+		expect(() => validateQuery({ sort: ['-json(metadata, color)'] })).not.toThrow();
+	});
+
+	test('accepts json() with dotted path in sort', () => {
+		expect(() => validateQuery({ sort: ['json(metadata, settings.theme)'] })).not.toThrow();
+	});
+
+	test('accepts multiple sort fields including json()', () => {
+		expect(() => validateQuery({ sort: ['title', 'json(metadata, color)', '-date_created'] })).not.toThrow();
+	});
+
+	test('accepts multiple json() sort fields', () => {
+		expect(() => validateQuery({ sort: ['json(metadata, color)', '-json(metadata, priority)'] })).not.toThrow();
+	});
+
+	test('rejects malformed json() among otherwise valid sort fields', () => {
+		expect(() => validateQuery({ sort: ['title', 'json(metadata)', '-date_created'] })).toThrow(
+			'Invalid json() syntax',
+		);
+	});
+
+	test('rejects malformed json() in sort — missing comma', () => {
+		expect(() => validateQuery({ sort: ['json(metadata)'] })).toThrow('Invalid json() syntax');
+	});
+
+	test('rejects malformed json() in sort — missing field', () => {
+		expect(() => validateQuery({ sort: ['json(, color)'] })).toThrow('Invalid json() syntax');
+	});
+
+	test('rejects malformed json() in sort — missing path', () => {
+		expect(() => validateQuery({ sort: ['json(metadata,)'] })).toThrow('Invalid json() syntax');
+	});
+
+	test('rejects malformed json() with leading dash in sort', () => {
+		expect(() => validateQuery({ sort: ['-json(metadata)'] })).toThrow('Invalid json() syntax');
+	});
+});
+
 describe('sort relational depth', async () => {
 	vi.mocked(useEnv).mockReturnValue({ MAX_RELATIONAL_DEPTH: 2 });
 	const { validateQuery } = await import('./validate-query.js');

@@ -1,7 +1,6 @@
 import type { Aggregate, Relation, SchemaOverview } from '@directus/types';
 import { getRelationInfo } from '@directus/utils';
 import type { Knex } from 'knex';
-import { parseJsonFunction } from '../../../../database/helpers/fn/json/parse-function.js';
 import { extractFunctionName } from '../../../../utils/extract-function-name.js';
 import type { AliasMap } from '../../../../utils/get-column-path.js';
 import { getColumnPath } from '../../../../utils/get-column-path.js';
@@ -77,9 +76,6 @@ export function applySort(
 
 			// Direct json() call or alias that resolves to json()
 			if (extractFunctionName(resolvedField) === 'json') {
-				// Validate the function parses correctly (throws on invalid syntax)
-				parseJsonFunction(resolvedField);
-
 				return {
 					order,
 					column: returnRecords ? resolvedField : (getColumn(knex, collection, resolvedField, false, schema) as any),

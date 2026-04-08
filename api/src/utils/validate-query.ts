@@ -47,6 +47,10 @@ export function validateQuery(query: Query): Query {
 		validateAlias(query.alias);
 	}
 
+	if (query.sort) {
+		validateSort(query.sort);
+	}
+
 	validateRelationalDepth(query);
 
 	if (error) {
@@ -192,6 +196,17 @@ function validateAlias(alias: any) {
 			parseJsonFunction(value.trim()); // throws InvalidQueryError on invalid json() syntax
 		} else if (value.includes('.')) {
 			throw new InvalidQueryError({ reason: `"alias" value can't contain a period character \`.\`` });
+		}
+	}
+}
+
+function validateSort(sort: string[]) {
+	for (const sortField of sort) {
+		const field = sortField.startsWith('-') ? sortField.slice(1) : sortField;
+
+		if (extractFunctionName(field) === 'json') {
+			// throws InvalidQueryError on invalid json() syntax
+			parseJsonFunction(field);
 		}
 	}
 }
