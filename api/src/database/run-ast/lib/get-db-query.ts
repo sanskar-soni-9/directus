@@ -188,10 +188,12 @@ export function getDBQuery(
 					orderByString += `?? ${sortRecord.order}`;
 					orderByColumn = getColumn(knex, alias!, field, false, schema, { originalCollectionName });
 				} else {
-					dbQuery.select(getColumn(knex, table, sortRecord.column, sortAlias, schema, { forSort: true }));
+					dbQuery.select(
+						getColumn(knex, table, sortRecord.column, sortAlias, schema, { jsonReturnType: 'text' as const }),
+					);
 
 					orderByString += `?? ${sortRecord.order}`;
-					orderByColumn = getColumn(knex, table, sortRecord.column, false, schema, { forSort: true });
+					orderByColumn = getColumn(knex, table, sortRecord.column, false, schema, { jsonReturnType: 'text' as const });
 				}
 
 				orderByFields.push(orderByColumn);
@@ -227,7 +229,9 @@ export function getDBQuery(
 						originalCollectionName: getCollectionFromAlias(alias!, aliasMap),
 					}) as any;
 				} else {
-					sortRecord.column = getColumn(knex, table, sortRecord.column, false, schema, { forSort: true }) as any;
+					sortRecord.column = getColumn(knex, table, sortRecord.column, false, schema, {
+						jsonReturnType: 'text' as const,
+					}) as any;
 				}
 			});
 
