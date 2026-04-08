@@ -266,9 +266,11 @@ export function useItems(collection: Ref<string | null>, query: ComputedQuery): 
 				signal: existingRequests.total.signal,
 			});
 
+			const aggregateData = response.data.data?.[0];
+
 			const count = primaryKeyField.value
-				? Number(response.data.data[0].countDistinct[primaryKeyField.value.field])
-				: Number(response.data.data[0].count);
+				? Number(aggregateData?.countDistinct?.[primaryKeyField.value.field] ?? 0)
+				: Number(aggregateData?.count ?? 0);
 
 			existingRequests.total = null;
 
@@ -306,9 +308,11 @@ export function useItems(collection: Ref<string | null>, query: ComputedQuery): 
 				signal: existingRequests.filter.signal,
 			});
 
+			const aggregateData = response.data.data?.[0];
+
 			const count = primaryKeyField.value
-				? Number(response.data.data[0].countDistinct[primaryKeyField.value.field])
-				: Number(response.data.data[0].count);
+				? Number(aggregateData?.countDistinct?.[primaryKeyField.value.field] ?? 0)
+				: Number(aggregateData?.count ?? 0);
 
 			existingRequests.filter = null;
 

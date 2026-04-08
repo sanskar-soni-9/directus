@@ -5,7 +5,7 @@ import { isSystemCollection } from '@directus/system-data';
 import { Filter } from '@directus/types';
 import { mergeFilters } from '@directus/utils';
 import { computed, ref, toRefs, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import ContentNavigation from '../components/navigation.vue';
 import ContentNotFound from './not-found.vue';
 import api from '@/api';
@@ -47,6 +47,7 @@ const props = defineProps<{
 	archive?: string;
 }>();
 
+const route = useRoute();
 const router = useRouter();
 
 const layoutRef = ref();
@@ -56,6 +57,17 @@ const bookmarkID = computed(() => (props.bookmark ? +props.bookmark : null));
 
 const { selection } = useSelection();
 const { info: currentCollection } = useCollection(collection);
+
+watch(
+	currentCollection,
+	(info) => {
+		if (info?.meta?.singleton) {
+			router.replace({ name: 'content-singleton', params: route.params, query: route.query });
+		}
+	},
+	{ immediate: true },
+);
+
 const { addNewLink, currentCollectionLink } = useLinks();
 const { breadcrumb } = useBreadcrumb();
 
