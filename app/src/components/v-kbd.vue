@@ -2,7 +2,7 @@
 import { translateShortcut } from '@directus/composables';
 import { computed } from 'vue';
 
-interface Props {
+export interface Props {
 	/** Keyboard key name to display, translated per platform (e.g. 'meta' → '⌘' on Mac) */
 	value?: string;
 	/** Size of the key cap */
@@ -13,7 +13,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
 	size: 'medium',
-	variant: 'soft',
+	variant: 'outlined',
 });
 
 const translatedValue = computed(() => {
@@ -72,7 +72,7 @@ const translatedValue = computed(() => {
 
 	&.outlined {
 		color: var(--v-kbd-color, var(--theme--foreground-subdued));
-		box-shadow: inset 0 0 0 var(--theme--border-width) var(--v-kbd-border-color, var(--theme--border-color));
+		box-shadow: inset 0 0 0 1px var(--v-kbd-border-color, var(--theme--border-color));
 	}
 
 	&.soft {
@@ -82,8 +82,8 @@ const translatedValue = computed(() => {
 
 	&.inverted {
 		color: var(--v-kbd-color, var(--foreground-inverted));
-		box-shadow: inset 0 0 0 var(--theme--border-width)
-			var(--v-kbd-border-color, color-mix(in srgb, var(--foreground-inverted) 40%, transparent));
+		box-shadow: inset 0 0 0 1px
+			var(--v-kbd-border-color, color-mix(in srgb, var(--foreground-inverted) 20%, transparent));
 	}
 }
 </style>

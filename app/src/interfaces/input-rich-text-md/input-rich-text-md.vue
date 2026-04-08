@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { translateShortcut, useShortcut } from '@directus/composables';
+import { useShortcut } from '@directus/composables';
 import CodeMirror from 'codemirror';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { Alteration, applyEdit, CustomSyntax } from './edits';
@@ -12,6 +12,7 @@ import VDialog from '@/components/v-dialog.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
 import VInput from '@/components/v-input.vue';
 import VItemGroup from '@/components/v-item-group.vue';
+import VKbdShortcut from '@/components/v-kbd-shortcut.vue';
 import VListItemContent from '@/components/v-list-item-content.vue';
 import VListItemHint from '@/components/v-list-item-hint.vue';
 import VListItem from '@/components/v-list-item.vue';
@@ -241,7 +242,10 @@ const menuActive = computed(() => imageDialogOpen.value);
 					<VList>
 						<VListItem v-for="n in 6" :key="n" clickable @click="edit('heading', { level: n })">
 							<VListItemContent><VTextOverflow :text="$t(`wysiwyg_options.h${n}`)" /></VListItemContent>
-							<VListItemHint>{{ translateShortcut(['meta', 'alt']) }} {{ n }}</VListItemHint>
+							<VListItemHint>
+								<VKbdShortcut :value="['meta', 'alt']" />
+								{{ n }}
+							</VListItemHint>
 						</VListItem>
 					</VList>
 				</VMenu>
