@@ -44,7 +44,8 @@
 		"unplugin-vue": "catalog:",
 		"vitest": "catalog:",
 		"vue": "catalog:",
-		"vue-tsc": "catalog:"
+		"vue-tsc": "catalog:",
+		"zod": "catalog:"
 	},
 	"peerDependencies": {
 		"@unhead/vue": "catalog:",
