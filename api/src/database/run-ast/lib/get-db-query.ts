@@ -188,10 +188,10 @@ export function getDBQuery(
 					orderByString += `?? ${sortRecord.order}`;
 					orderByColumn = getColumn(knex, alias!, field, false, schema, { originalCollectionName });
 				} else {
-					dbQuery.select(getColumn(knex, table, sortRecord.column, sortAlias, schema));
+					dbQuery.select(getColumn(knex, table, sortRecord.column, sortAlias, schema, { forSort: true }));
 
 					orderByString += `?? ${sortRecord.order}`;
-					orderByColumn = getColumn(knex, table, sortRecord.column, false, schema);
+					orderByColumn = getColumn(knex, table, sortRecord.column, false, schema, { forSort: true });
 				}
 
 				orderByFields.push(orderByColumn);
@@ -227,7 +227,7 @@ export function getDBQuery(
 						originalCollectionName: getCollectionFromAlias(alias!, aliasMap),
 					}) as any;
 				} else {
-					sortRecord.column = getColumn(knex, table, sortRecord.column, false, schema) as any;
+					sortRecord.column = getColumn(knex, table, sortRecord.column, false, schema, { forSort: true }) as any;
 				}
 			});
 

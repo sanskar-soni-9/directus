@@ -82,7 +82,9 @@ export function applySort(
 			if (extractFunctionName(resolvedField) === 'json') {
 				return {
 					order,
-					column: returnRecords ? resolvedField : (getColumn(knex, collection, resolvedField, false, schema) as any),
+					column: returnRecords
+						? resolvedField
+						: (getColumn(knex, collection, resolvedField, false, schema, { forSort: true }) as any),
 				};
 			}
 

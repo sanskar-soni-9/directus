@@ -19,6 +19,8 @@ export type FnHelperOptions = {
 	jsonPath: string | undefined;
 	/** When true, the JSON extraction expression returns text (for use in WHERE clauses). */
 	jsonFilter?: boolean;
+	/** When true, the JSON extraction expression returns text (for use in ORDER BY clauses). */
+	forSort?: boolean;
 	/** When true, the JSON extraction expression is cast to a numeric type for numeric comparisons. */
 	castNumeric?: boolean;
 };
