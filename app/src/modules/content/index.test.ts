@@ -11,6 +11,8 @@ vi.mock('@/api', () => ({ default: { get: vi.fn() } }));
 
 const {
 	enterDraftContext,
+	redirectSingleton,
+	ensureSingleton,
 	stripOrphanedVersionId,
 	stripVersionOnNonVersioned,
 	stripVersionIdOnRealItem,
@@ -110,6 +112,115 @@ describe('enterDraftContext', () => {
 		};
 
 		expect(enterDraftContext(to as any, {} as any, vi.fn())).toBeUndefined();
+	});
+});
+
+describe('redirectSingleton', () => {
+	beforeEach(() => mockGetCollection.mockReset());
+
+	it('redirects to content-singleton route when collection is a singleton', () => {
+		mockGetCollection.mockReturnValue({ meta: { singleton: true } });
+
+		const to = {
+			params: { collection: 'settings' },
+			query: {},
+		};
+
+		const result = redirectSingleton(to as any, {} as any, vi.fn());
+
+		expect(result).toMatchObject({
+			name: 'content-singleton',
+			params: { collection: 'settings' },
+			query: {},
+		});
+	});
+
+	it('passes through for non-singleton collections', () => {
+		mockGetCollection.mockReturnValue({ meta: { singleton: false } });
+
+		const to = {
+			params: { collection: 'posts' },
+			query: {},
+		};
+
+		expect(redirectSingleton(to as any, {} as any, vi.fn())).toBeUndefined();
+	});
+
+	it('passes through when collection is not found', () => {
+		mockGetCollection.mockReturnValue(null);
+
+		const to = {
+			params: { collection: 'unknown' },
+			query: {},
+		};
+
+		expect(redirectSingleton(to as any, {} as any, vi.fn())).toBeUndefined();
+	});
+
+	it('preserves query params when redirecting', () => {
+		mockGetCollection.mockReturnValue({ meta: { singleton: true } });
+
+		const to = {
+			params: { collection: 'settings' },
+			query: { version: 'draft' },
+		};
+
+		const result = redirectSingleton(to as any, {} as any, vi.fn());
+
+		expect(result).toMatchObject({
+			name: 'content-singleton',
+			params: { collection: 'settings' },
+			query: { version: 'draft' },
+		});
+	});
+});
+
+describe('ensureSingleton', () => {
+	beforeEach(() => mockGetCollection.mockReset());
+
+	it('passes through when collection is a singleton', () => {
+		mockGetCollection.mockReturnValue({ meta: { singleton: true } });
+
+		const to = {
+			params: { collection: 'settings' },
+			query: {},
+		};
+
+		expect(ensureSingleton(to as any, {} as any, vi.fn())).toBeUndefined();
+	});
+
+	it('redirects to content-collection when collection is not a singleton', () => {
+		mockGetCollection.mockReturnValue({ meta: { singleton: false } });
+
+		const to = {
+			params: { collection: 'posts' },
+			query: {},
+		};
+
+		const result = ensureSingleton(to as any, {} as any, vi.fn());
+
+		expect(result).toMatchObject({
+			name: 'content-collection',
+			params: { collection: 'posts' },
+			query: {},
+		});
+	});
+
+	it('redirects to content-collection when collection is not found', () => {
+		mockGetCollection.mockReturnValue(null);
+
+		const to = {
+			params: { collection: 'unknown' },
+			query: {},
+		};
+
+		const result = ensureSingleton(to as any, {} as any, vi.fn());
+
+		expect(result).toMatchObject({
+			name: 'content-collection',
+			params: { collection: 'unknown' },
+			query: {},
+		});
 	});
 });
 

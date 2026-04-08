@@ -5,7 +5,7 @@ import { useLocalStorage } from '@vueuse/core';
 import { isNil, orderBy } from 'lodash';
 import { LocationQuery, NavigationGuard } from 'vue-router';
 import { useNavigation } from './composables/use-navigation';
-import CollectionOrItem from './routes/collection-or-item.vue';
+import CollectionRoute from './routes/collection.vue';
 import Item from './routes/item.vue';
 import NoCollections from './routes/no-collections.vue';
 import ItemNotFound from './routes/not-found.vue';
@@ -33,6 +33,38 @@ export const enterDraftContext: NavigationGuard = (to) => {
 	if (!isSingleton && !isNewItem) return;
 
 	return { ...to, query: { ...to.query, version: VERSION_KEY_DRAFT } };
+};
+
+export const redirectSingleton: NavigationGuard = (to) => {
+	const collection = typeof to.params.collection === 'string' ? to.params.collection : undefined;
+	if (!collection) return;
+
+	const collectionInfo = useCollectionsStore().getCollection(collection);
+	if (!collectionInfo?.meta?.singleton) return;
+
+	return { name: 'content-singleton', params: to.params, query: to.query };
+};
+
+export const ensureSingleton: NavigationGuard = (to) => {
+	const collection = typeof to.params.collection === 'string' ? to.params.collection : undefined;
+
+	if (collection) {
+		const collectionInfo = useCollectionsStore().getCollection(collection);
+		if (collectionInfo?.meta?.singleton) return;
+	}
+
+	return { name: 'content-collection', params: to.params, query: to.query };
+};
+
+const trackLastAccessedCollection: NavigationGuard = (to) => {
+	const collection = typeof to.params.collection === 'string' ? to.params.collection : undefined;
+	if (!collection) return;
+
+	const lastAccessedCollection = useLocalStorage<string | null>('directus-last-accessed-collection', null);
+
+	if (lastAccessedCollection.value !== collection) {
+		lastAccessedCollection.value = collection;
+	}
 };
 
 const checkForSystem: NavigationGuard = (to, from) => {
@@ -203,7 +235,7 @@ export default defineModule({
 				{
 					name: 'content-collection',
 					path: '',
-					component: CollectionOrItem,
+					component: CollectionRoute,
 					props: (route) => {
 						const archive = getArchiveValue(route.query);
 						return {
@@ -212,7 +244,23 @@ export default defineModule({
 							archive,
 						};
 					},
-					beforeEnter: [checkForSystem, enterDraftContext, stripVersionOnNonVersioned],
+					beforeEnter: [checkForSystem, trackLastAccessedCollection, redirectSingleton],
+				},
+				{
+					name: 'content-singleton',
+					path: '',
+					component: Item,
+					props: (route) => ({
+						collection: route.params.collection,
+						singleton: true,
+					}),
+					beforeEnter: [
+						checkForSystem,
+						ensureSingleton,
+						trackLastAccessedCollection,
+						enterDraftContext,
+						stripVersionOnNonVersioned,
+					],
 				},
 				{
 					name: 'content-item',
