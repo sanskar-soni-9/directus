@@ -49,6 +49,7 @@ export default function applyQuery(
 	if (query.sort && !options?.isInnerQuery && !options?.hasMultiRelationalSort) {
 		const sortResult = applySort(knex, schema, dbQuery, query.sort, collection, aliasMap, {
 			aggregate: query.aggregate,
+			fieldAliasMap: { ...(query.alias ?? {}) },
 		});
 
 		if (!hasJoins) {
