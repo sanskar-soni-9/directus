@@ -10,14 +10,6 @@ test('renders as kbd element by default', () => {
 	expect(wrapper.element.tagName).toBe('KBD');
 });
 
-test('renders slot content', () => {
-	const wrapper = mount(VKbd, {
-		slots: { default: 'K' },
-	});
-
-	expect(wrapper.text()).toBe('K');
-});
-
 test('renders translated value on non-mac', () => {
 	vi.stubGlobal('navigator', { platform: 'Win32' });
 

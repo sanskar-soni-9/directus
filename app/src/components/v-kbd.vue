@@ -16,7 +16,10 @@ const props = withDefaults(defineProps<Props>(), {
 	variant: 'soft',
 });
 
-const translatedValue = computed(() => (props.value ? translateShortcut([props.value]) : undefined));
+const translatedValue = computed(() => {
+	if (!props.value) return undefined;
+	return translateShortcut([props.value]) || props.value;
+});
 </script>
 
 <template>
