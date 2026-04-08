@@ -193,7 +193,8 @@ function validateAlias(alias: any) {
 		}
 
 		if (extractFunctionName(value) === 'json') {
-			parseJsonFunction(value.trim()); // throws InvalidQueryError on invalid json() syntax
+			// throws InvalidQueryError on invalid json() syntax
+			parseJsonFunction(value);
 		} else if (value.includes('.')) {
 			throw new InvalidQueryError({ reason: `"alias" value can't contain a period character \`.\`` });
 		}

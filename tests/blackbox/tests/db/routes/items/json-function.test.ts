@@ -4,7 +4,7 @@ import { CreateItem } from '@common/functions';
 import vendors from '@common/get-dbs-to-test';
 import { PRIMARY_KEY_TYPES, USER } from '@common/variables';
 import request from 'supertest';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, test } from 'vitest';
 import type { CachedTestsSchema, TestsSchemaVendorValues } from '../../query/filter';
 import { collectionProducts, getTestsSchema, type Product, seedDBValues } from './json-function.seed';
 
@@ -20,7 +20,7 @@ beforeAll(async () => {
 }, 300_000);
 
 describe('Seed Database Values', () => {
-	it.each(vendors)('%s', async (vendor) => {
+	test.each(vendors)('%s', async (vendor) => {
 		expect(vendorSchemaValues[vendor]).toBeDefined();
 	});
 });
@@ -32,7 +32,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 		describe('GET /:collection', () => {
 			describe('json() field extraction', () => {
 				describe('retrieves json field with simple path', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -56,7 +56,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('retrieves json field with nested object path', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -79,7 +79,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('retrieves json field with array index path', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -100,7 +100,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('retrieves json field with nested array and object path', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -121,7 +121,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('returns nested object as parsed JSON, not as string', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -142,7 +142,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('returns array as parsed JSON, not as string', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -163,7 +163,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('returns nested array of objects as parsed JSON, not as string', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -188,7 +188,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('retrieves multiple json extractions from different fields', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -208,7 +208,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('handles null and missing values gracefully', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						// Zeta (sort: '-name', limit: 1) has no brand, no dimensions, and null settings
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
@@ -235,7 +235,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('handles empty arrays', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						// Gamma has an empty variants array
 						const listResponse = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
@@ -262,7 +262,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('combines json extraction with regular fields', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -293,7 +293,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 
 			describe('json() aliasing', () => {
 				describe('uses custom alias for simple json path', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -318,7 +318,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('uses custom alias for nested json path', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -347,7 +347,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('uses custom alias for array index path', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -371,7 +371,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('uses custom alias for deeply nested path (array element + property)', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -394,7 +394,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('supports multiple json() aliases in one request', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -424,7 +424,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('json alias can be combined with regular fields', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -450,7 +450,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('json alias returns null for missing path', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						// Zeta (last sorted) has no brand or dimensions
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
@@ -474,7 +474,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('json alias returns parsed object, not string', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -497,7 +497,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 
 			describe('json() sorting', () => {
 				describe('sorts asc by direct json() expression', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						// Colors: black(Zeta) < blue(Beta) < green(Gamma) < red(Alpha)
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
@@ -518,7 +518,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('sorts desc by direct json() expression', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -538,7 +538,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('sorts asc by json() alias', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -558,7 +558,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('sorts desc by json() alias', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -578,7 +578,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('sorts by json() with dotted path', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						// Widths: Alpha=10, Beta=15, Gamma=12, Zeta=null → sorted: 10, 12, 15, null
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
@@ -601,7 +601,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 
 			describe('regular field aliasing', () => {
 				describe('uses custom alias for a simple field', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -624,7 +624,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('supports multiple field aliases', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -652,7 +652,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 				});
 
 				describe('field alias is included when using wildcard fields', () => {
-					it.each(vendors)('%s', async (vendor) => {
+					test.each(vendors)('%s', async (vendor) => {
 						const response = await request(getUrl(vendor))
 							.get(`/items/${localCollectionProducts}`)
 							.query({
@@ -679,7 +679,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 	describe(`pkType: ${pkType}`, () => {
 		describe('GET /:collection/:id', () => {
 			describe('retrieves single item with json extraction', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					// Find Alpha by sorting — first by name
 					const listResponse = await request(getUrl(vendor))
 						.get(`/items/${localCollectionProducts}`)
@@ -704,7 +704,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 			});
 
 			describe('json alias works on single item endpoint', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const listResponse = await request(getUrl(vendor))
 						.get(`/items/${localCollectionProducts}`)
 						.query({ fields: 'id', sort: 'name', limit: 1 })
@@ -733,7 +733,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 
 		describe('Error handling', () => {
 			describe('returns error for non-json field', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const response = await request(getUrl(vendor))
 						.get(`/items/${localCollectionProducts}`)
 						.query({ fields: 'id,json(name, invalid)' })
@@ -745,7 +745,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 			});
 
 			describe('returns error for non-existent field', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const response = await request(getUrl(vendor))
 						.get(`/items/${localCollectionProducts}`)
 						.query({ fields: 'id,json(nonexistent, path)' })
@@ -757,7 +757,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 			});
 
 			describe('returns error for invalid json function syntax (missing path)', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const response = await request(getUrl(vendor))
 						.get(`/items/${localCollectionProducts}`)
 						.query({ fields: 'id,json(metadata)' })
@@ -769,7 +769,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 			});
 
 			describe('rejects alias key containing a period', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const response = await request(getUrl(vendor))
 						.get(`/items/${localCollectionProducts}`)
 						.query({
@@ -784,7 +784,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 			});
 
 			describe('rejects alias value with a period that is not a json() call', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const response = await request(getUrl(vendor))
 						.get(`/items/${localCollectionProducts}`)
 						.query({
@@ -799,7 +799,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 			});
 
 			describe('rejects json() alias with invalid syntax (missing path)', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const response = await request(getUrl(vendor))
 						.get(`/items/${localCollectionProducts}`)
 						.query({
@@ -814,7 +814,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 			});
 
 			describe('rejects json() alias on non-json field', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const response = await request(getUrl(vendor))
 						.get(`/items/${localCollectionProducts}`)
 						.query({
@@ -831,7 +831,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 
 		describe('POST /:collection', () => {
 			describe('can create item and extract json in same request', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const newProduct: Product = {
 						name: 'New Product ' + randomUUID(),
 						metadata: {
@@ -864,7 +864,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 			});
 
 			describe('json alias works on create response', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const newProduct: Product = {
 						name: 'New Alias Product ' + randomUUID(),
 						metadata: { color: 'purple', brand: 'AliasTest' },
@@ -895,7 +895,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 
 		describe('PATCH /:collection/:id', () => {
 			describe('can update item and extract json in same request', () => {
-				it.each(vendors)('%s', async (vendor) => {
+				test.each(vendors)('%s', async (vendor) => {
 					const product: Product = {
 						name: 'Update Test ' + randomUUID(),
 						metadata: {
