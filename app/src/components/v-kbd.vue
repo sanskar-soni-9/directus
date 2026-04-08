@@ -8,7 +8,7 @@ interface Props {
 	/** Size of the key cap */
 	size?: 'small' | 'medium' | 'large';
 	/** Visual style variant */
-	variant?: 'outlined' | 'soft';
+	variant?: 'outlined' | 'soft' | 'inverted';
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -75,6 +75,12 @@ const translatedValue = computed(() => (props.value ? translateShortcut([props.v
 	&.soft {
 		color: var(--v-kbd-color, var(--theme--foreground-subdued));
 		background-color: var(--v-kbd-background-color, var(--theme--background-subdued));
+	}
+
+	&.inverted {
+		color: var(--v-kbd-color, var(--foreground-inverted));
+		box-shadow: inset 0 0 0 var(--theme--border-width)
+			var(--v-kbd-border-color, color-mix(in srgb, var(--foreground-inverted) 40%, transparent));
 	}
 }
 </style>
