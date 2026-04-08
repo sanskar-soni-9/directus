@@ -8,6 +8,6 @@ export function extractFunctionName(str: string): string | null {
 	if (!trimmed.includes('(') || !trimmed.endsWith(')')) {
 		return null;
 	}
-	
+
 	return trimmed.split('(')[0] ?? null;
 }

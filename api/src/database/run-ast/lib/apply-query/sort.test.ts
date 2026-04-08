@@ -271,6 +271,25 @@ test('sort by alias resolving to json()', async () => {
 	expect(rawQuery.bindings).toEqual(['$.color']);
 });
 
+test('sort desc by alias resolving to json()', async () => {
+	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
+	const queryBuilder = db.queryBuilder();
+
+	applySort(db, schemaWithJson, queryBuilder, ['-myColor'], null, 'articles', {}, false, {
+		myColor: 'json(metadata, color)',
+	});
+
+	const tracker = createTracker(db);
+	tracker.on.select('*').response([]);
+
+	await queryBuilder;
+
+	const rawQuery = tracker.history.all[0]!;
+
+	expect(rawQuery.sql).toEqual(`select * order by json_extract("articles"."metadata", ?) desc`);
+	expect(rawQuery.bindings).toEqual(['$.color']);
+});
+
 test('sort by auto-generated json alias regenerates extraction expression', async () => {
 	const db = vi.mocked(knex.default({ client: Client_SQLite3 }));
 	const queryBuilder = db.queryBuilder();
@@ -303,10 +322,10 @@ test('relational sort with json() generates JOIN and extraction expression', asy
 
 	const rawQuery = tracker.history.all[0]!;
 
-	// Should JOIN categories and sort by json_extract on the joined alias
-	expect(rawQuery.sql).toContain('left join "categories"');
-	expect(rawQuery.sql).toContain('json_extract(');
-	expect(rawQuery.sql).toContain('"metadata"');
-	expect(rawQuery.sql).toContain('asc');
+	// Alias is deterministic based on collection/path/relationType — computed from generateJoinAlias
+	expect(rawQuery.sql).toEqual(
+		`select * left join "categories" as "augiz" on "articles"."category_id" = "augiz"."id" order by json_extract("augiz"."metadata", ?) asc`,
+	);
+
 	expect(rawQuery.bindings).toEqual(['$.color']);
 });
