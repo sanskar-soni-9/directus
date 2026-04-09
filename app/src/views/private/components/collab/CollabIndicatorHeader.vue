@@ -10,6 +10,7 @@ import VIcon from '@/components/v-icon/v-icon.vue';
 import VListItem from '@/components/v-list-item.vue';
 import VList from '@/components/v-list.vue';
 import VMenu from '@/components/v-menu.vue';
+import VTooltip from '@/components/v-tooltip.vue';
 import type { CollabUser } from '@/composables/use-collab';
 
 interface Props {
@@ -56,8 +57,8 @@ function focusIntoView(cid: ClientID) {
 <template>
 	<div class="collab-header">
 		<template v-for="(user, index) in users.slice(0, COLLAB_USERS_DISPLAY_LIMIT)" :key="user.id">
-			<VMenu trigger="hover" show-arrow invert>
-				<template #activator>
+			<VTooltip>
+				<template #trigger>
 					<VAvatar
 						:border="`var(--${user.color})`"
 						:style="{ zIndex: COLLAB_USERS_DISPLAY_LIMIT - index }"
@@ -71,28 +72,30 @@ function focusIntoView(cid: ClientID) {
 						<VIcon v-else name="person" small />
 					</VAvatar>
 				</template>
-
-				<div class="collab-header-popover">
-					<p>
-						{{ user.name ?? t('unknown_user') }}
-						<template v-if="user.isCurrentUser">({{ t('you') }})</template>
-					</p>
-					<p class="collab-header-popover-status">
-						{{
-							user.focusedField
-								? t('collab_editing_field', { field: formatTitle(user.focusedField) })
-								: t('collab_currently_viewing')
-						}}
-					</p>
-				</div>
-			</VMenu>
+				<p>
+					{{ user.name ?? t('unknown_user') }}
+					<template v-if="user.isCurrentUser">({{ t('you') }})</template>
+				</p>
+				<p class="collab-header-popover-status">
+					{{
+						user.focusedField
+							? t('collab_editing_field', { field: formatTitle(user.focusedField) })
+							: t('collab_currently_viewing')
+					}}
+				</p>
+			</VTooltip>
 		</template>
 
 		<VMenu v-if="users.length > COLLAB_USERS_DISPLAY_LIMIT" show-arrow>
 			<template #activator="{ toggle }">
-				<VAvatar v-tooltip.bottom="t('more_users')" class="more-users" x-small round clickable @click="toggle">
-					+{{ users.length - COLLAB_USERS_DISPLAY_LIMIT }}
-				</VAvatar>
+				<VTooltip side="bottom">
+					<template #trigger>
+						<VAvatar class="more-users" x-small round clickable @click.stop="toggle">
+							+{{ users.length - COLLAB_USERS_DISPLAY_LIMIT }}
+						</VAvatar>
+					</template>
+					{{ t('more_users') }}
+				</VTooltip>
 			</template>
 
 			<VList>
@@ -140,26 +143,9 @@ function focusIntoView(cid: ClientID) {
 	display: flex;
 	align-items: center;
 
-	:deep(.v-menu + .v-menu .v-avatar) {
-		margin-inline-start: -0.25rem;
-	}
-
 	:deep(.v-avatar) {
 		font-size: 0.6875rem;
 	}
-}
-
-.collab-header-popover {
-	padding: 0.25rem;
-	padding-block-end: 0.375rem;
-	display: flex;
-	flex-direction: column;
-}
-
-.collab-header-popover-status {
-	font-size: 0.857em;
-	line-height: 1.2;
-	color: var(--theme--foreground-subdued);
 }
 
 .collab-header-more-popover-item {
@@ -173,5 +159,11 @@ function focusIntoView(cid: ClientID) {
 		flex-direction: column;
 		align-items: flex-start;
 	}
+}
+
+.collab-header-popover-status {
+	font-size: 0.857em;
+	line-height: 1.2;
+	color: var(--theme--foreground-subdued);
 }
 </style>
