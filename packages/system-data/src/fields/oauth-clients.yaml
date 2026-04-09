@@ -20,3 +20,7 @@ fields:
       - date-created
       - cast-timestamp
     width: half
+  - field: tokens
+    special:
+      - o2m
+    hidden: true
