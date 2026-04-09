@@ -90,7 +90,7 @@ function focusIntoView(cid: ClientID) {
 			<template #activator="{ toggle }">
 				<VTooltip side="bottom">
 					<template #trigger>
-						<VAvatar class="more-users" x-small round clickable @click.stop="toggle">
+						<VAvatar class="more-users" x-small round clickable @click="toggle">
 							+{{ users.length - COLLAB_USERS_DISPLAY_LIMIT }}
 						</VAvatar>
 					</template>
@@ -145,6 +145,10 @@ function focusIntoView(cid: ClientID) {
 
 	:deep(.v-avatar) {
 		font-size: 0.6875rem;
+	}
+
+	:deep(.v-avatar + .v-avatar) {
+		margin-inline-start: -0.25rem;
 	}
 }
 
