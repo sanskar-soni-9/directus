@@ -10,6 +10,9 @@ export type DateFunctions = 'year' | 'month' | 'week' | 'day' | 'weekday';
 export type TimeFunctions = 'hour' | 'minute' | 'second';
 export type ArrayFunctions = 'count';
 
+/** First arg is constrained to json fields on Item; path is a runtime string so the response alias cannot be statically resolved. */
+export type JsonFunctionField<Item> = `json(${Extract<LiteralFields<Item, 'json'>, string>}, ${string})`;
+
 export type QueryFunctions = {
 	datetime: DateTimeFunctions;
 	date: DateFunctions;
@@ -48,7 +51,8 @@ export type FunctionFields<Schema, Item> =
 	| {
 			[Type in keyof QueryFunctions]: TypeFunctionFields<Item, Type>;
 	  }[keyof QueryFunctions]
-	| keyof TranslateFunctionFields<RelationalFunctions<Schema, Item>, ArrayFunctions>;
+	| keyof TranslateFunctionFields<RelationalFunctions<Schema, Item>, ArrayFunctions>
+	| JsonFunctionField<Item>;
 
 /**
  *
