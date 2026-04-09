@@ -706,8 +706,8 @@ catalogs:
       specifier: 1.1.12
       version: 1.1.12
     nodemailer:
-      specifier: 7.0.11
-      version: 7.0.11
+      specifier: 8.0.5
+      version: 8.0.5
     nodemailer-mailgun-transport:
       specifier: 2.1.5
       version: 2.1.5
@@ -1308,7 +1308,7 @@ importers:
         version: 1.1.12
       nodemailer:
         specifier: 'catalog:'
-        version: 7.0.11
+        version: 8.0.5
       object-hash:
         specifier: 'catalog:'
         version: 3.0.0
@@ -2934,7 +2934,7 @@ importers:
         version: 16.12.0
       nodemailer:
         specifier: 'catalog:'
-        version: 7.0.11
+        version: 8.0.5
       openapi3-ts:
         specifier: 'catalog:'
         version: 4.5.0
@@ -3231,14 +3231,14 @@ importers:
         specifier: 'catalog:'
         version: 4.18.1
       mailparser:
-        specifier: 3.9.3
-        version: 3.9.3
+        specifier: 3.9.8
+        version: 3.9.8
       seedrandom:
         specifier: 3.0.5
         version: 3.0.5
       smtp-server:
-        specifier: 3.18.1
-        version: 3.18.1
+        specifier: 3.18.4
+        version: 3.18.4
       supertest:
         specifier: 7.1.4
         version: 7.1.4
@@ -10983,6 +10983,9 @@ packages:
   libmime@5.3.7:
     resolution: {integrity: sha512-FlDb3Wtha8P01kTL3P9M+ZDNDWPKPmKHWaU/cG/lg5pfuAwdflVpZE+wm9m7pKmC5ww6s+zTxBKS1p6yl3KpSw==}
 
+  libmime@5.3.8:
+    resolution: {integrity: sha512-ZrCY+Q66mPvasAfjsQ/IgahzoBvfE1VdtGRpo1hwRB1oK3wJKxhKA3GOcd2a6j7AH5eMFccxK9fBoCpRZTf8ng==}
+
   libqp@2.1.1:
     resolution: {integrity: sha512-0Wd+GPz1O134cP62YU2GTOPNA7Qgl09XwCqM5zpBv87ERCXdfDtyKXvV7c9U22yWJh44QZqBocFnXN11K96qow==}
 
@@ -11266,8 +11269,8 @@ packages:
   mailgun.js@8.2.2:
     resolution: {integrity: sha512-po/KtofzrTuKhHLenbmliDsVVOFANwcfDFUGnggwnyZJmZz7JgBlV6nzK9o2Fk+OK2SiBmJTK25RbkAj57Hd+Q==}
 
-  mailparser@3.9.3:
-    resolution: {integrity: sha512-AnB0a3zROum6fLaa52L+/K2SoRJVyFDk78Ea6q1D0ofcZLxWEWDtsS1+OrVqKbV7r5dulKL/AwYQccFGAPpuYQ==}
+  mailparser@3.9.8:
+    resolution: {integrity: sha512-7jSlFGXiianVnhnb6wdutJFloD34488nrHY7r6FNqwXAhZ7YiJDYrKKTxZJ0oSrXcAPHm8YoYnh97xyGtrBQ3w==}
 
   make-dir@4.0.0:
     resolution: {integrity: sha512-hXdUTZYIVOt1Ex//jAQi+wTZZpUpwBj/0QsOzqegb3rGMMeJiSEu5xLHnYfBrRV4RH2+OCSOO95Is/7x1WJ4bw==}
@@ -11717,12 +11720,8 @@ packages:
   nodemailer-mailgun-transport@2.1.5:
     resolution: {integrity: sha512-hF7POkaxFgMvYEd5aHLaQJI2511ld+aQlQi7JH6bGjhjlZ33cIbTB9PimlIrLu5XC3z76Kde6e65OIwL9lOdTA==}
 
-  nodemailer@7.0.11:
-    resolution: {integrity: sha512-gnXhNRE0FNhD7wPSCGhdNh46Hs6nm+uTyg+Kq0cZukNQiYdnCsoQjodNP9BQVG9XrcK/v6/MgpAPBUFyzh9pvw==}
-    engines: {node: '>=6.0.0'}
-
-  nodemailer@7.0.13:
-    resolution: {integrity: sha512-PNDFSJdP+KFgdsG3ZzMXCgquO7I6McjY2vlqILjtJd0hy8wEvtugS9xKRF2NWlPNGxvLCXlTNIae4serI7dinw==}
+  nodemailer@8.0.5:
+    resolution: {integrity: sha512-0PF8Yb1yZuQfQbq+5/pZJrtF6WQcjTd5/S4JOHs9PGFxuTqoB/icwuB44pOdURHJbRKX1PPoJZtY7R4VUoCC8w==}
     engines: {node: '>=6.0.0'}
 
   nodemon@3.1.10:
@@ -13434,8 +13433,8 @@ packages:
   smob@1.5.0:
     resolution: {integrity: sha512-g6T+p7QO8npa+/hNx9ohv1E5pVCmWrVCUzUXJyLdMmftX6ER0oiWY/w9knEonLpnOp6b6FenKnMfR8gqwWdwig==}
 
-  smtp-server@3.18.1:
-    resolution: {integrity: sha512-zlUXA6n3HkO0jMyNNc2S67uw7DWHOoLU9vjPo5oW2c8ehJMpRlSumyw4riuvfWPfW/8mryd7ED5PVf4YVg8Y6w==}
+  smtp-server@3.18.4:
+    resolution: {integrity: sha512-9EnXPG4Tv+2P/TSEUdFTduYn9IxtxNRsOq/ryVj8ZlT+6MU2um9gn2Td2hHlgH1n+saagMWtici3hn5J5PhU+g==}
     engines: {node: '>=18.18.0'}
 
   snake-case@3.0.4:
@@ -24121,6 +24120,13 @@ snapshots:
       libbase64: 1.3.0
       libqp: 2.1.1
 
+  libmime@5.3.8:
+    dependencies:
+      encoding-japanese: 2.2.0
+      iconv-lite: 0.7.2
+      libbase64: 1.3.0
+      libqp: 2.1.1
+
   libqp@2.1.1: {}
 
   lightningcss-android-arm64@1.32.0:
@@ -24378,16 +24384,16 @@ snapshots:
       - debug
     optional: true
 
-  mailparser@3.9.3:
+  mailparser@3.9.8:
     dependencies:
       '@zone-eu/mailsplit': 5.4.8
       encoding-japanese: 2.2.0
       he: 1.2.0
       html-to-text: 9.0.5
       iconv-lite: 0.7.2
-      libmime: 5.3.7
+      libmime: 5.3.8
       linkify-it: 5.0.0
-      nodemailer: 7.0.13
+      nodemailer: 8.0.5
       punycode.js: 2.3.1
       tlds: 1.261.0
 
@@ -24931,9 +24937,7 @@ snapshots:
       - whiskers
     optional: true
 
-  nodemailer@7.0.11: {}
-
-  nodemailer@7.0.13: {}
+  nodemailer@8.0.5: {}
 
   nodemon@3.1.10:
     dependencies:
@@ -26931,10 +26935,10 @@ snapshots:
 
   smob@1.5.0: {}
 
-  smtp-server@3.18.1:
+  smtp-server@3.18.4:
     dependencies:
       ipv6-normalize: 1.0.1
-      nodemailer: 7.0.13
+      nodemailer: 8.0.5
       punycode.js: 2.3.1
 
   snake-case@3.0.4:
