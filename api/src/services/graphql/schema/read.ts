@@ -371,6 +371,15 @@ export async function getReadableTypes(
 		},
 	});
 
+	const JsonFilterOperators = schemaComposer.createInputTC({
+		name: 'json_filter_operators',
+		fields: {
+			_json: { type: GraphQLJSON },
+			_null: { type: GraphQLBoolean },
+			_nnull: { type: GraphQLBoolean },
+		},
+	});
+
 	const CountFunctionFilterOperators = schemaComposer.createInputTC({
 		name: 'count_function_filter_operators',
 		fields: {
@@ -495,6 +504,10 @@ export async function getReadableTypes(
 					acc[`${field.field}_func`] = {
 						type: CountFunctionFilterOperators,
 					};
+				}
+
+				if (field.type === 'json') {
+					acc[field.field] = { type: JsonFilterOperators };
 				}
 
 				return acc;
