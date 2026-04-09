@@ -244,7 +244,7 @@ export default defineModule({
 							archive,
 						};
 					},
-					beforeEnter: [checkForSystem, trackLastAccessedCollection, redirectSingleton],
+					beforeEnter: [checkForSystem, trackLastAccessedCollection, redirectSingleton, stripVersionOnNonVersioned],
 				},
 				{
 					name: 'content-singleton',
