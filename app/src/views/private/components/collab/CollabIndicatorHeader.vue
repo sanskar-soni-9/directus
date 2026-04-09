@@ -72,17 +72,19 @@ function focusIntoView(cid: ClientID) {
 						<VIcon v-else name="person" small />
 					</VAvatar>
 				</template>
-				<p>
-					{{ user.name ?? t('unknown_user') }}
-					<template v-if="user.isCurrentUser">({{ t('you') }})</template>
-				</p>
-				<p class="collab-header-popover-status">
-					{{
-						user.focusedField
-							? t('collab_editing_field', { field: formatTitle(user.focusedField) })
-							: t('collab_currently_viewing')
-					}}
-				</p>
+				<div class="collab-header-tooltip-content">
+					<p>
+						{{ user.name ?? t('unknown_user') }}
+						<template v-if="user.isCurrentUser">({{ t('you') }})</template>
+					</p>
+					<p class="collab-header-popover-status">
+						{{
+							user.focusedField
+								? t('collab_editing_field', { field: formatTitle(user.focusedField) })
+								: t('collab_currently_viewing')
+						}}
+					</p>
+				</div>
 			</VTooltip>
 		</template>
 
@@ -163,6 +165,11 @@ function focusIntoView(cid: ClientID) {
 		flex-direction: column;
 		align-items: flex-start;
 	}
+}
+
+.collab-header-tooltip-content {
+	padding-inline: 0.125rem;
+	padding-block-end: 0.125rem;
 }
 
 .collab-header-popover-status {
