@@ -1,7 +1,7 @@
 import { GENERATE_SPECIAL } from '@directus/constants';
 import type { GQLScope } from '@directus/types';
 import type { GraphQLNullableType } from 'graphql';
-import { GraphQLID, GraphQLInt, GraphQLNonNull, GraphQLScalarType, GraphQLUnionType } from 'graphql';
+import { GraphQLID, GraphQLInt, GraphQLNonNull, GraphQLScalarType, GraphQLString, GraphQLUnionType } from 'graphql';
 import type {
 	ObjectTypeComposerFieldConfigAsObjectDefinition,
 	ObjectTypeComposerFieldConfigDefinition,
@@ -9,6 +9,7 @@ import type {
 } from 'graphql-compose';
 import { GraphQLJSON, ObjectTypeComposer } from 'graphql-compose';
 import { mapKeys, pick } from 'lodash-es';
+import { applyFunctionToColumnName } from '../../../database/run-ast/utils/apply-function-to-column-name.js';
 import { getGraphQLType } from '../../../utils/get-graphql-type.js';
 import { type InconsistentFields, type Schema, SYSTEM_DENY_LIST } from './index.js';
 
@@ -164,6 +165,15 @@ export function getTypes(
 									const funcFields = Object.keys(CountFunctions.getFields()).map((key) => `${field.field}_${key}`);
 									return mapKeys(pick(obj, funcFields), (_value, key) => key.substring(field.field.length + 1));
 								},
+							};
+						}
+
+						if (field.type === 'json') {
+							acc[`${field.field}_json`] = {
+								type: GraphQLJSON,
+								args: { path: { type: new GraphQLNonNull(GraphQLString) } },
+								resolve: (obj: Record<string, any>, { path }: { path: string }) =>
+									obj[applyFunctionToColumnName(`json(${field.field}, ${path})`)],
 							};
 						}
 					}

@@ -140,6 +140,17 @@ export async function getQuery(
 
 				fields.push(...children);
 			} else {
+				if (current.endsWith('_json') && selection.kind === 'Field' && selection.arguments?.length) {
+					const pathArg = selection.arguments.find((a) => a.name.value === 'path');
+
+					if (pathArg) {
+						const pathValue = (parseArgs([pathArg], variableValues) as { path: string }).path;
+						const rootField = current.slice(0, -5); // strip trailing '_json'
+						fields.push(`json(${rootField}, ${pathValue})`);
+						continue;
+					}
+				}
+
 				fields.push(current);
 			}
 

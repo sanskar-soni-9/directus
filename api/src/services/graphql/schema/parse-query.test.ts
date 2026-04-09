@@ -210,6 +210,48 @@ describe('parseFields', () => {
 		expect(query.fields).toEqual([]);
 	});
 
+	test('should transform _json field with path arg into json() function string', async () => {
+		const pathArg = { name: { value: 'path' }, value: { kind: 'StringValue', value: 'color' } };
+		const selections = [field('metadata_json', { args: [pathArg] })];
+
+		const query = await getQuery({}, mockSchema, selections, mockVariableValues, mockAccountability);
+		expect(query.fields).toEqual(['json(metadata, color)']);
+	});
+
+	test('should transform _json field with nested dot-path', async () => {
+		const pathArg = { name: { value: 'path' }, value: { kind: 'StringValue', value: 'dimensions.width' } };
+		const selections = [field('metadata_json', { args: [pathArg] })];
+
+		const query = await getQuery({}, mockSchema, selections, mockVariableValues, mockAccountability);
+		expect(query.fields).toEqual(['json(metadata, dimensions.width)']);
+	});
+
+	test('should not transform _json field when path arg is absent', async () => {
+		const selections = [field('metadata_json')];
+
+		const query = await getQuery({}, mockSchema, selections, mockVariableValues, mockAccountability);
+		expect(query.fields).toEqual(['metadata_json']);
+	});
+
+	test('should not include metadata_json literal in fields when path arg is present', async () => {
+		// Verifies the _json path fires the continue branch and emits json(…)
+		// rather than the raw 'metadata_json' field name.
+		const pathArg = { name: { value: 'path' }, value: { kind: 'StringValue', value: 'color' } };
+		const selections = [field('metadata_json', { args: [pathArg] })];
+
+		const query = await getQuery({}, mockSchema, selections, mockVariableValues, mockAccountability);
+		expect(query.fields).not.toContain('metadata_json');
+		expect(query.fields).toContain('json(metadata, color)');
+	});
+
+	test('should transform nested relational _json field', async () => {
+		const pathArg = { name: { value: 'path' }, value: { kind: 'StringValue', value: 'color' } };
+		const selections = [field('category', { children: [field('metadata_json', { args: [pathArg] })] })];
+
+		const query = await getQuery({}, mockSchema, selections, mockVariableValues, mockAccountability);
+		expect(query.fields).toEqual(['json(category.metadata, color)']);
+	});
+
 	test('M2A InlineFragment with full relation chain produces correct paths', async () => {
 		// contents → item → InlineFragment(ComponentText) with translation filter
 		const filterArg = gqlFilterArg({ languages_code: { code: { _eq: 'en-EN' } } });
