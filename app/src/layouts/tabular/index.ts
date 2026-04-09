@@ -105,9 +105,20 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 			});
 		});
 
+		const isDraftMode = computed(() => !!versionKey.value);
+
+		const draftItems = computed(() => {
+			if (!isDraftMode.value) return items.value;
+
+			return items.value.map((item: Record<string, any>) => ({
+				...item,
+				_versionId: item.$meta?.version_id ?? null,
+			}));
+		});
+
 		return {
 			tableHeaders,
-			items,
+			items: draftItems,
 			loading,
 			loadingItemCount,
 			error,
@@ -164,6 +175,12 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 		}
 
 		function selectAll() {
+			if (isDraftMode.value) {
+				selection.value = items.value.map((item) => item.$meta?.version_id).filter((id): id is string => !!id);
+
+				return;
+			}
+
 			if (!primaryKeyField.value) return;
 			const pk = primaryKeyField.value;
 			selection.value = items.value.map((item) => item[pk.field]);

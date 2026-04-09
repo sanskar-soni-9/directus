@@ -223,12 +223,12 @@ function useBatch() {
 
 		deleting.value = true;
 
-		const batchPrimaryKeys = selection.value;
-
 		try {
-			await api.delete(`/items/${props.collection}`, {
-				data: batchPrimaryKeys,
-			});
+			if (isDraftMode.value) {
+				await api.delete('/versions', { data: selection.value });
+			} else {
+				await api.delete(`/items/${props.collection}`, { data: selection.value });
+			}
 
 			selection.value = [];
 			await refresh();
@@ -473,7 +473,8 @@ function clearFilters() {
 						selection.length > 0 &&
 						currentCollection.meta &&
 						currentCollection.meta.archive_field &&
-						archive !== 'archived'
+						archive !== 'archived' &&
+						!isDraftMode
 					"
 					v-model="confirmArchive"
 					@esc="confirmArchive = false"
@@ -504,7 +505,7 @@ function clearFilters() {
 				</VDialog>
 
 				<PrivateViewHeaderBarActionButton
-					v-if="selection.length > 0"
+					v-if="selection.length > 0 && !isDraftMode"
 					v-tooltip.bottom="batchEditAllowed ? $t('edit') : $t('not_allowed')"
 					secondary
 					:disabled="batchEditAllowed === false"
@@ -596,9 +597,10 @@ function clearFilters() {
 					<component :is="`layout-options-${layout || 'tabular'}`" v-bind="layoutState" />
 				</LayoutSidebarDetail>
 				<component :is="`layout-sidebar-${layout || 'tabular'}`" v-bind="layoutState" />
-				<ArchiveSidebarDetail v-if="hasArchive" :collection="collection" :archive="archive" />
+				<ArchiveSidebarDetail v-if="hasArchive && !isDraftMode" :collection="collection" :archive="archive" />
 				<RefreshSidebarDetail v-model="refreshInterval" @refresh="refresh" />
 				<ExportSidebarDetail
+					v-if="!isDraftMode"
 					:collection="collection"
 					:filter="mergeFilters(filter, archiveFilter)"
 					:search="search"
@@ -606,7 +608,7 @@ function clearFilters() {
 					:on-download="downloadHandler"
 					@refresh="refresh"
 				/>
-				<FlowSidebarDetail :manual-flows />
+				<FlowSidebarDetail v-if="!isDraftMode" :manual-flows />
 			</template>
 
 			<VDialog :model-value="deleteError !== null" @esc="deleteError = null">

@@ -246,6 +246,8 @@ export function useItems(collection: Ref<string | null>, query: ComputedQuery): 
 	}
 
 	async function changeManualSort({ item, to }: ManualSortData) {
+		if (unref(version)) return;
+
 		const pk = primaryKeyField.value?.field;
 		if (!pk) return;
 

@@ -2,7 +2,7 @@
 import { useSync } from '@directus/composables';
 import { useShortcut } from '@directus/composables';
 import type { Field, Filter, Item, ShowSelect } from '@directus/types';
-import { ComponentPublicInstance, inject, ref, Ref, toRefs, watch } from 'vue';
+import { ComponentPublicInstance, computed, inject, ref, Ref, toRefs, watch } from 'vue';
 import VDivider from '@/components/v-divider.vue';
 import VFieldList from '@/components/v-field-list/v-field-list.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
@@ -19,6 +19,7 @@ import VTable from '@/components/v-table/v-table.vue';
 import { AliasFields, useAliasFields } from '@/composables/use-alias-fields';
 import { usePageSize } from '@/composables/use-page-size';
 import { useCollectionPermissions } from '@/composables/use-permissions';
+import { useVersionQuery } from '@/composables/use-version-query';
 import { Collection } from '@/types/collections';
 import RenderDisplay from '@/views/private/components/render-display.vue';
 
@@ -76,6 +77,8 @@ const emit = defineEmits(['update:selection', 'update:tableHeaders', 'update:lim
 const { collection } = toRefs(props);
 
 const { sortAllowed } = useCollectionPermissions(collection);
+const versionKey = useVersionQuery();
+const manualSortAllowed = computed(() => sortAllowed.value && !versionKey.value);
 
 const selectionWritable = useSync(props, 'selection', emit);
 const tableHeadersWritable = useSync(props, 'tableHeaders', emit);
@@ -137,8 +140,8 @@ function removeField(fieldKey: string) {
 			:items="items"
 			:loading="loading"
 			:row-height="tableRowHeight"
-			:item-key="primaryKeyField?.field"
-			:show-manual-sort="sortAllowed"
+			:item-key="versionKey ? '_versionId' : primaryKeyField?.field"
+			:show-manual-sort="manualSortAllowed"
 			:manual-sort-key="sortField"
 			allow-header-reorder
 			selection-use-keys
