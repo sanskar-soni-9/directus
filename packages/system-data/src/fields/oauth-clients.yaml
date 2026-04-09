@@ -1,8 +1,6 @@
 table: directus_oauth_clients
 
 fields:
-  - field: client_id
-    width: half
   - field: client_name
     width: half
   - field: redirect_uris
@@ -19,12 +17,15 @@ fields:
     display_options:
       format: false
     width: full
-  - field: token_endpoint_auth_method
-    width: half
   - field: date_created
     special:
       - date-created
       - cast-timestamp
+    width: half
+  - field: client_id
+    width: half
+    hidden: true
+  - field: token_endpoint_auth_method
     width: half
   - field: tokens
     special:
