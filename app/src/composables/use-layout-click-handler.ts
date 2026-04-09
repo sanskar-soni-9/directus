@@ -38,7 +38,14 @@ export function useLayoutClickHandler({
 				selection.value = selection.value.filter((item) => item !== primaryKey);
 			}
 		} else {
-			const route = getItemRoute(props.collection, primaryKey, versionKey?.value, versionId?.value);
+			const isItemless = primaryKey === null && item.$meta?.version_id;
+
+			const route = getItemRoute(
+				props.collection,
+				isItemless ? '+' : primaryKey,
+				versionKey?.value,
+				isItemless ? item.$meta.version_id : versionId?.value,
+			);
 
 			if (event.ctrlKey || event.metaKey) window.open(router.resolve(route).href, '_blank');
 			else router.push(route);

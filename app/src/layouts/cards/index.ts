@@ -232,7 +232,16 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 
 		function getLinkForItem(item: Record<string, any>) {
 			if (!primaryKeyField.value) return;
-			return getItemRoute(props.collection, item[primaryKeyField.value.field], versionKey.value ?? undefined);
+
+			const primaryKey = item[primaryKeyField.value.field];
+			const isItemless = primaryKey === null && item.$meta?.version_id;
+
+			return getItemRoute(
+				props.collection,
+				isItemless ? '+' : primaryKey,
+				versionKey.value ?? undefined,
+				isItemless ? item.$meta.version_id : undefined,
+			);
 		}
 
 		function selectAll() {

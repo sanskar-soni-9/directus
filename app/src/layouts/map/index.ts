@@ -240,7 +240,17 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 			if (props.selectMode) {
 				handleSelect({ ids: [id], replace });
 			} else {
-				router.push(getItemRoute(unref(collection), id, versionKey.value ?? undefined));
+				const item = items.value.find((item) => primaryKeyField.value && item[primaryKeyField.value.field] === id);
+				const isItemless = id === null && item?.$meta?.version_id;
+
+				router.push(
+					getItemRoute(
+						unref(collection),
+						isItemless ? '+' : id,
+						versionKey.value ?? undefined,
+						isItemless ? item.$meta.version_id : undefined,
+					),
+				);
 			}
 		}
 
