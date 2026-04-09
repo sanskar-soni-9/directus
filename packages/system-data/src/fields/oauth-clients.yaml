@@ -9,11 +9,15 @@ fields:
     special:
       - cast-json
     display: labels
+    display_options:
+      format: false
     width: full
   - field: grant_types
     special:
       - cast-json
     display: labels
+    display_options:
+      format: false
     width: full
   - field: token_endpoint_auth_method
     width: half
