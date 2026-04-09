@@ -213,7 +213,10 @@ let rateLimitMiddleware: (req: Request, res: Response, next: NextFunction) => vo
  */
 export const mcpOAuthPublicRouter = Router();
 
-mcpOAuthPublicRouter.use(asyncHandler(checkOAuthSettings));
+mcpOAuthPublicRouter.use(
+	['/mcp-oauth', '/.well-known/oauth-authorization-server', '/.well-known/oauth-protected-resource'],
+	asyncHandler(checkOAuthSettings),
+);
 
 // Discovery: .well-known/oauth-protected-resource (with and without RFC 9728 path insertion)
 mcpOAuthPublicRouter.get(
@@ -427,7 +430,7 @@ mcpOAuthPublicRouter.use(oauthErrorHandler);
  */
 export const mcpOAuthProtectedRouter = Router();
 
-mcpOAuthProtectedRouter.use(asyncHandler(checkOAuthSettings));
+mcpOAuthProtectedRouter.use('/mcp-oauth', asyncHandler(checkOAuthSettings));
 
 // Decision: POST /mcp-oauth/authorize/decision
 // Native form POST + 302 redirect. Auth code stays in HTTP layer, never enters JS.
