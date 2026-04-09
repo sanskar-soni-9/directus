@@ -3,7 +3,6 @@ import { ForbiddenError, InvalidPayloadError, ServiceUnavailableError } from '@d
 import { jsonSchema, streamObject, wrapLanguageModel } from 'ai';
 import type { RequestHandler } from 'express';
 import { fromZodError } from 'zod-validation-error';
-import { useLogger } from '../../../logger/index.js';
 import { getDevToolsMiddleware } from '../../devtools/index.js';
 import {
 	type AISettings,
@@ -66,19 +65,13 @@ export const aiObjectPostHandler: RequestHandler = async (req, res) => {
 		'directus-ai-object',
 	);
 
-	const logger = useLogger();
-
 	const result = streamObject({
 		model: languageModel,
 		prompt,
 		schema: jsonSchema(addAdditionalPropertiesToJsonSchema(outputSchema)),
 		providerOptions,
-		maxRetries: 0,
 		...(typeof maxOutputTokens === 'number' ? { maxOutputTokens } : {}),
 		...(telemetryConfig ? { experimental_telemetry: telemetryConfig } : {}),
-		onError({ error }) {
-			logger.warn(error, 'AI object stream error');
-		},
 	});
 
 	result.pipeTextStreamToResponse(res);

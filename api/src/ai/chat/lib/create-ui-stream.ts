@@ -10,7 +10,6 @@ import {
 	type UIMessage,
 	wrapLanguageModel,
 } from 'ai';
-import { useLogger } from '../../../logger/index.js';
 import { getDevToolsMiddleware } from '../../devtools/index.js';
 import { applyAnthropicToolSearch } from '../../providers/anthropic-tool-search.js';
 import {
@@ -69,8 +68,6 @@ export const createUiStream = async (
 	const finalTools = applyAnthropicToolSearch(provider, model, tools);
 	const telemetryConfig = getAITelemetryConfig({ provider, model, userId, role });
 
-	const logger = useLogger();
-
 	const stream = streamText({
 		system: baseSystemPrompt,
 		model: languageModel,
@@ -78,11 +75,7 @@ export const createUiStream = async (
 		stopWhen: [stepCountIs(10)],
 		providerOptions,
 		tools: finalTools,
-		maxRetries: 0,
 		...(telemetryConfig ? { experimental_telemetry: telemetryConfig } : {}),
-		onError({ error }) {
-			logger.warn(error, 'AI chat stream error');
-		},
 		/**
 		 * prepareStep is called before each AI step to prepare the system prompt.
 		 * When context exists, we override the system prompt to include context attachments.

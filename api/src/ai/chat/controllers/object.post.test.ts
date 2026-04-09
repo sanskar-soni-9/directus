@@ -10,16 +10,9 @@ import { aiObjectPostHandler } from './object.post.js';
 const mockPipeTextStreamToResponse = vi.fn();
 
 vi.mock('ai', () => ({
-	streamObject: vi.fn(() => ({
-		pipeTextStreamToResponse: mockPipeTextStreamToResponse,
-		object: Promise.resolve({}),
-	})),
+	streamObject: vi.fn(() => ({ pipeTextStreamToResponse: mockPipeTextStreamToResponse })),
 	jsonSchema: vi.fn((schema: unknown) => schema),
 	wrapLanguageModel: vi.fn(({ model }: { model: unknown }) => model),
-}));
-
-vi.mock('../../../logger/index.js', () => ({
-	useLogger: () => ({ warn: vi.fn(), error: vi.fn(), info: vi.fn() }),
 }));
 
 vi.mock('../../providers/index.js', () => ({
