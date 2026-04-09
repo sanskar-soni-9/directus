@@ -8,10 +8,12 @@ fields:
   - field: redirect_uris
     special:
       - cast-json
+    display: labels
     width: full
   - field: grant_types
     special:
       - cast-json
+    display: labels
     width: full
   - field: token_endpoint_auth_method
     width: half
