@@ -40,7 +40,7 @@ import { useVisualEditing } from '@/composables/use-visual-editing';
 import { BREAKPOINTS } from '@/constants';
 import { sameOrigin } from '@/modules/visual/utils/same-origin';
 import { useUserStore } from '@/stores/user';
-import type { ContentVersionMaybeNew, ContentVersionWithType } from '@/types/versions';
+import type { ContentVersionWithType } from '@/types/versions';
 import { getDefaultValuesFromFields } from '@/utils/get-default-values-from-fields';
 import { getCollectionRoute, getItemRoute } from '@/utils/get-route';
 import { mergeItemData } from '@/utils/merge-item-data';
@@ -78,12 +78,7 @@ const { collectionRoute, backRoute } = useItemNavigation();
 
 const userStore = useUserStore();
 
-const isCurrentVersionNew = computed(() => isVersionNew(currentVersion.value));
-
-const isPublishAllowed = computed(() => {
-	if (isCurrentVersionNew.value) return false;
-	return props.primaryKey === '+' ? createAllowed.value : updateAllowed.value;
-});
+const isCurrentVersionNew = computed(() => currentVersion.value?.id === '+');
 
 const form = ref<ComponentPublicInstance>();
 
@@ -97,6 +92,11 @@ const { breadcrumb } = useBreadcrumb();
 const revisionsSidebarDetailRef = ref<InstanceType<typeof RevisionsSidebarDetail> | null>(null);
 
 const { info: collectionInfo, defaults, primaryKeyField, isSingleton, accountabilityScope } = useCollection(collection);
+
+const isPublishAllowed = computed(() => {
+	if (isCurrentVersionNew.value) return false;
+	return primaryKey.value === '+' ? createAllowed.value : updateAllowed.value;
+});
 
 const {
 	readVersionsAllowed,
@@ -220,7 +220,7 @@ useShortcut(
 		if (currentVersion.value === null) {
 			saveAndStay();
 		} else {
-			saveVersionAction('stay');
+			saveVersionAction();
 		}
 	},
 	form,
@@ -229,11 +229,8 @@ useShortcut(
 useShortcut(
 	'meta+shift+s',
 	() => {
-		if (currentVersion.value === null) {
-			saveAndAddNew();
-		} else {
-			saveVersionAction('quit');
-		}
+		if (currentVersion.value !== null) return;
+		saveAndAddNew();
 	},
 	form,
 );
@@ -503,20 +500,16 @@ function useBreadcrumb() {
 	return { breadcrumb };
 }
 
-async function saveVersionAction(action: 'stay' | 'quit') {
+async function saveVersionAction() {
 	if (isSavable.value === false) return;
 
 	try {
 		await saveVersion(edits, item, actualPrimaryKey.value);
 		edits.value = {};
 
-		if (action === 'stay') {
-			if (!isNew.value) {
-				refresh();
-				revisionsSidebarDetailRef.value?.refresh?.();
-			}
-		} else if (action === 'quit') {
-			if (!props.singleton) router.push(`/content/${props.collection}`);
+		if (!isNew.value) {
+			refresh();
+			revisionsSidebarDetailRef.value?.refresh?.();
 		}
 	} catch {
 		// Save shows unexpected error dialog
@@ -775,10 +768,6 @@ function editDraftVersion() {
 		currentVersion.value = draftVersion;
 	}
 }
-
-function isVersionNew(version: ContentVersionMaybeNew | null) {
-	return version?.id === '+';
-}
 </script>
 
 <template>
@@ -946,7 +935,7 @@ function isVersionNew(version: ContentVersionMaybeNew | null) {
 						:loading="saveVersionLoading"
 						:disabled="!isSavable"
 						small
-						@click="saveVersionAction('stay')"
+						@click="saveVersionAction()"
 					>
 						<VIcon name="beenhere" small />
 					</VButton>
