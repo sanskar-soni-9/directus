@@ -689,14 +689,12 @@ function usePublishComparison() {
 				const versionId = currentVersion.value.id;
 				const newItemKey = await publishVersion(versionId, {});
 
-				if (newItemKey) {
-					if (quit) {
-						router.push(collectionRoute.value);
-					} else {
-						router.replace(getItemRoute(props.collection, newItemKey));
-						deleteVersion(versionId);
-					}
-				}
+				if (!newItemKey) return;
+
+				if (quit) router.push(collectionRoute.value);
+				else router.replace(getItemRoute(props.collection, newItemKey));
+
+				deleteVersion(versionId);
 			} catch {
 				// publishVersion / deleteVersion handle unexpected errors
 			} finally {
@@ -740,11 +738,12 @@ function usePublishComparison() {
 
 			if (quitAfterPublish.value) {
 				router.push(collectionRoute.value);
-			} else {
-				currentVersion.value = null;
-				refresh();
-				revisionsSidebarDetailRef.value?.refresh?.();
+				return;
 			}
+
+			currentVersion.value = null;
+			refresh();
+			revisionsSidebarDetailRef.value?.refresh?.();
 		} catch {
 			// publishVersion / deleteVersion handle unexpected errors
 		} finally {
@@ -946,7 +945,7 @@ function editDraftVersion() {
 						small
 						:disabled="!isPublishAllowed"
 						:tooltip="`${$t('publish')} (${translateShortcut(['meta', 'alt', 'p'])})`"
-						@click="onVersionPublishCompare"
+						@click="onVersionPublishCompare()"
 					>
 						<VIcon name="public" small />
 
