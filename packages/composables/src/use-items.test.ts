@@ -285,4 +285,149 @@ describe('useItems', () => {
 
 		expect(unref(items.value[0]?.['$thumbnail'])).toBeOneOf([expect.any(Object)]);
 	});
+
+	describe('version query param', () => {
+		test('should skip getItemCount and getTotalCount when version is set', async () => {
+			const collection = ref('test_collection');
+
+			vi.mocked(mockApiGet).mockResolvedValue({
+				data: {
+					data: [{ id: 1 }, { id: 2 }],
+				},
+			});
+
+			await useItems(collection, {
+				fields: ref(['id']),
+				limit: ref(25),
+				sort: ref(['id']),
+				search: ref(''),
+				filter: ref({}),
+				page: ref(1),
+				version: ref('draft'),
+			});
+
+			// Only getItems should be called — no aggregate calls for count/total
+			expect(mockApiGet).toHaveBeenCalledTimes(1);
+
+			expect(mockApiGet).toHaveBeenCalledWith(
+				'/items/test_collection',
+				expect.objectContaining({
+					params: expect.objectContaining({
+						version: 'draft',
+					}),
+				}),
+			);
+		});
+
+		test('should derive itemCount and totalCount client-side from fetched items when version is set', async () => {
+			const collection = ref('test_collection');
+			const fetchedItems = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+			vi.mocked(mockApiGet).mockResolvedValue({
+				data: { data: fetchedItems },
+			});
+
+			const { itemCount, totalCount } = useItems(collection, {
+				fields: ref(['id']),
+				limit: ref(25),
+				sort: ref(['id']),
+				search: ref(''),
+				filter: ref({}),
+				page: ref(1),
+				version: ref('draft'),
+			});
+
+			await flushPromises();
+
+			expect(itemCount.value).toBe(3);
+			expect(totalCount.value).toBe(3);
+		});
+
+		test('should pass version param to the API request', async () => {
+			const collection = ref('test_collection');
+
+			vi.mocked(mockApiGet).mockResolvedValue({
+				data: { data: [] },
+			});
+
+			await useItems(collection, {
+				fields: ref(['id']),
+				limit: ref(25),
+				sort: ref(['id']),
+				search: ref(''),
+				filter: ref({}),
+				page: ref(1),
+				version: ref('draft'),
+			});
+
+			expect(mockApiGet).toHaveBeenCalledWith(
+				'/items/test_collection',
+				expect.objectContaining({
+					params: expect.objectContaining({
+						version: 'draft',
+					}),
+				}),
+			);
+		});
+
+		test('should prevent changeManualSort when version is set', async () => {
+			const collection = ref('test_collection');
+			const mockApiPost = vi.fn();
+
+			vi.mocked(useApi).mockImplementation(() => ({ get: mockApiGet, post: mockApiPost }) as unknown as AxiosInstance);
+
+			vi.mocked(mockApiGet).mockResolvedValue({
+				data: { data: [{ id: 1 }, { id: 2 }] },
+			});
+
+			const { changeManualSort } = useItems(collection, {
+				fields: ref(['id']),
+				limit: ref(25),
+				sort: ref(['id']),
+				search: ref(''),
+				filter: ref({}),
+				page: ref(1),
+				version: ref('draft'),
+			});
+
+			await flushPromises();
+
+			await changeManualSort({ item: 1, to: 2 });
+
+			expect(mockApiPost).not.toHaveBeenCalled();
+		});
+
+		test('should refetch with count update when version value changes', async () => {
+			const collection = ref('test_collection');
+			const version: Ref<string | undefined> = ref(undefined);
+
+			vi.mocked(mockApiGet).mockResolvedValue({
+				data: {
+					data: [{ count: 1, countDistinct: { id: 1 } }],
+				},
+			});
+
+			await useItems(collection, {
+				fields: ref(['id']),
+				limit: ref(25),
+				sort: ref(['id']),
+				search: ref(''),
+				filter: ref({}),
+				page: ref(1),
+				version,
+			});
+
+			// Initial: items + count + total = 3
+			expect(mockApiGet).toHaveBeenCalledTimes(3);
+
+			// Switch to draft mode
+			version.value = 'draft';
+
+			await vi.advanceTimersByTimeAsync(500);
+
+			// Should call getItems again (no separate count call since version is now set)
+			// items(2) + count(1) + total(1) = 4
+			expect(mockApiGet).toHaveBeenCalledTimes(4);
+		});
+	});
 });
