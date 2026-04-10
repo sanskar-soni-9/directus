@@ -814,8 +814,6 @@ function editDraftVersion() {
 					v-if="shouldShowVersioning"
 					:collection="collection"
 					:primary-key="internalPrimaryKey!"
-					:update-allowed="updateAllowed"
-					:create-allowed="createAllowed"
 					:has-edits="hasEdits"
 					:current-version="currentVersion"
 					:versions="versions"
