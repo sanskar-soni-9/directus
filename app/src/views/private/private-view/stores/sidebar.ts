@@ -67,6 +67,7 @@ export const useSidebarStore = defineStore('sidebar-store', () => {
 
 	const expand = () => {
 		if (collapsed.value === false) return;
+		enforceDefault.value = true;
 		collapsed.value = false;
 	};
 
