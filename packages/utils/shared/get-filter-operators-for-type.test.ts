@@ -107,7 +107,7 @@ describe('', () => {
 	});
 
 	it('returns the filter operators for geometry', () => {
-		expect(getFilterOperatorsForType('geometry')).toStrictEqual([
+		const geometryOperators = [
 			'eq',
 			'neq',
 			'null',
@@ -116,7 +116,15 @@ describe('', () => {
 			'nintersects',
 			'intersects_bbox',
 			'nintersects_bbox',
-		]);
+		];
+
+		expect(getFilterOperatorsForType('geometry')).toStrictEqual(geometryOperators);
+		expect(getFilterOperatorsForType('geometry.Point')).toStrictEqual(geometryOperators);
+		expect(getFilterOperatorsForType('geometry.LineString')).toStrictEqual(geometryOperators);
+		expect(getFilterOperatorsForType('geometry.Polygon')).toStrictEqual(geometryOperators);
+		expect(getFilterOperatorsForType('geometry.MultiPoint')).toStrictEqual(geometryOperators);
+		expect(getFilterOperatorsForType('geometry.MultiLineString')).toStrictEqual(geometryOperators);
+		expect(getFilterOperatorsForType('geometry.MultiPolygon')).toStrictEqual(geometryOperators);
 	});
 
 	it('includes validation only types', () => {
