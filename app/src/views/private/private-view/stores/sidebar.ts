@@ -2,11 +2,16 @@ import { createEventHook, useLocalStorage } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 
+export const SIDEBAR_DEFAULT_SIZE = 333;
+export const SIDEBAR_MIN_SIZE = 252;
+
 export const useSidebarStore = defineStore('sidebar-store', () => {
 	const collapsed = useLocalStorage('sidebar-collapsed', false);
 
-	const DEFAULT_SIZE = 333;
+	const DEFAULT_SIZE = SIDEBAR_DEFAULT_SIZE;
+	const MIN_SIZE = SIDEBAR_MIN_SIZE;
 	const storedSize = useLocalStorage('sidebar-size', DEFAULT_SIZE);
+	const enforceDefault = ref(false);
 
 	const size = computed({
 		get() {
@@ -17,10 +22,22 @@ export const useSidebarStore = defineStore('sidebar-store', () => {
 				return DEFAULT_SIZE;
 			}
 
+			// Enforce default size when the sidebar is below the minimum size
+			if (enforceDefault.value && val <= MIN_SIZE) {
+				return DEFAULT_SIZE;
+			}
+
 			return val;
 		},
 		set(val: number) {
-			if (Number.isFinite(val)) storedSize.value = val;
+			if (Number.isFinite(val)) {
+				// Remove default size enforcement once the sidebar is larger than the minimum size
+				if (enforceDefault.value && val > MIN_SIZE) {
+					enforceDefault.value = false;
+				}
+
+				storedSize.value = val;
+			}
 		},
 	});
 
@@ -35,6 +52,7 @@ export const useSidebarStore = defineStore('sidebar-store', () => {
 			activeAccordionItem.value = undefined;
 			collapseHook.trigger();
 		} else {
+			enforceDefault.value = true;
 			expandHook.trigger();
 		}
 	});
