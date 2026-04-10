@@ -91,6 +91,17 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 			version: versionKey,
 		});
 
+		const isDraftMode = computed(() => !!versionKey.value);
+
+		const draftItems = computed(() => {
+			if (!isDraftMode.value) return items.value;
+
+			return items.value.map((item: Record<string, any>) => ({
+				...item,
+				_versionId: item.$meta?.version_id ?? null,
+			}));
+		});
+
 		const showingCount = computed(() => {
 			// Don't show count if there are no items
 			if (!totalCount.value || !itemCount.value) return;
@@ -113,7 +124,7 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 		});
 
 		return {
-			items,
+			items: draftItems,
 			loading,
 			loadingItemCount,
 			error,
@@ -245,6 +256,12 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 		}
 
 		function selectAll() {
+			if (isDraftMode.value) {
+				selection.value = items.value.map((item) => item.$meta?.version_id).filter((id): id is string => !!id);
+
+				return;
+			}
+
 			if (!primaryKeyField.value) return;
 			const pk = primaryKeyField.value;
 			selection.value = clone(items.value).map((item) => item[pk.field]);

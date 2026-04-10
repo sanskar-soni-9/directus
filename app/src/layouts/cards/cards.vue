@@ -9,6 +9,7 @@ import VProgressCircular from '@/components/v-progress-circular.vue';
 import VSelect from '@/components/v-select/v-select.vue';
 import VSkeletonLoader from '@/components/v-skeleton-loader.vue';
 import { usePageSize } from '@/composables/use-page-size';
+import { useVersionQuery } from '@/composables/use-version-query';
 import { Collection } from '@/types/collections';
 import RenderTemplate from '@/views/private/components/render-template.vue';
 
@@ -73,6 +74,8 @@ const limitWritable = useSync(props, 'limit', emit);
 const sizeWritable = useSync(props, 'size', emit);
 const sortWritable = useSync(props, 'sort', emit);
 
+const versionKey = useVersionQuery();
+
 const mainElement = inject<Ref<Element | undefined>>('main-element');
 
 const layoutElement = ref<HTMLElement>();
@@ -125,9 +128,9 @@ function onSelectAll() {
 				<slot name="prepend" />
 				<Card
 					v-for="item in items"
-					:key="item[primaryKeyField!.field]"
+					:key="versionKey ? item._versionId : item[primaryKeyField!.field]"
 					v-model="selectionWritable"
-					:item-key="primaryKeyField!.field"
+					:item-key="versionKey ? '_versionId' : primaryKeyField!.field"
 					:crop="imageFit === 'crop'"
 					:icon="icon"
 					:file="imageSource ? item[imageSource] : null"
