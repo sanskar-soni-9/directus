@@ -7,7 +7,7 @@ import VListItemContent from '@/components/v-list-item-content.vue';
 import VListItem from '@/components/v-list-item.vue';
 import VList from '@/components/v-list.vue';
 import VMenu from '@/components/v-menu.vue';
-import LayoutSubheader from '@/views/private/components/layout-subheader.vue';
+import SubHeader from '@/views/private/components/sub-header.vue';
 
 const props = withDefaults(
 	defineProps<{
@@ -79,7 +79,7 @@ function onClickSelect() {
 </script>
 
 <template>
-	<LayoutSubheader>
+	<SubHeader>
 		<template #start>
 			<button type="button" :class="{ 'no-selection': !totalSelectionCount }" @click="onClickSelect">
 				<template v-if="totalSelectionCount">
@@ -130,7 +130,7 @@ function onClickSelect() {
 				@click="toggleDescending"
 			/>
 		</template>
-	</LayoutSubheader>
+	</SubHeader>
 </template>
 
 <style lang="scss" scoped>

@@ -1,5 +1,5 @@
 <template>
-	<div class="layout-subheader">
+	<div class="sub-header">
 		<div class="start">
 			<slot name="start" />
 		</div>
@@ -10,7 +10,7 @@
 </template>
 
 <style lang="scss" scoped>
-.layout-subheader {
+.sub-header {
 	position: sticky;
 	inset-block-start: var(--layout-offset-top);
 	z-index: 4;
