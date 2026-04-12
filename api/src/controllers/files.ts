@@ -145,6 +145,8 @@ router.post(
 
 		if (req.is('multipart/form-data')) {
 			keys = res.locals['savedFiles'];
+		} else if (req.query['copy'] === '1') {
+			keys = await service.copyOne(req.body);
 		} else {
 			keys = await service.createOne(req.body);
 		}

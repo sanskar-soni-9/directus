@@ -510,6 +510,53 @@ export class FilesService extends ItemsService<File> {
 
 		return super.readByQuery(filteredQuery, opts);
 	}
+
+	/**
+	 * Copy a file
+	 */
+	async copyOne(data: Partial<File>, opts: MutationOptions = {}): Promise<PrimaryKey> {
+		if (!data.filename_disk) {
+			throw new InvalidPayloadError({ reason: `"filename_disk" is required` });
+		}
+
+		const sourceFilename = this.generateFilenamePath(data.filename_disk);
+
+		const sourceFile = await this.knex
+			.select('storage', 'filesize', 'type', 'width', 'height')
+			.from('directus_files')
+			.where({ filename_disk: sourceFilename })
+			.first();
+
+		if (!sourceFile) {
+			throw new InvalidPayloadError({
+				reason: `Source file not found for copy`,
+			});
+		}
+
+		const payload = { ...data, ...sourceFile, uploaded_on: new Date().toISOString() };
+		delete payload.filename_disk;
+
+		const storage = await getStorage();
+		const disk = storage.location(payload.storage);
+
+		const newId = await super.createOne(payload, opts);
+
+		const ext = path.extname(sourceFilename) || (payload.type && '.' + extension(payload.type)) || '';
+		const finalFilename = newId + (ext || '');
+
+		try {
+			await disk.copy(sourceFilename, finalFilename);
+		} catch (err) {
+			await super.deleteMany([newId]);
+			throw err;
+		}
+
+		await super.updateOne(newId, {
+			filename_disk: finalFilename,
+		});
+
+		return newId;
+	}
 }
 
 function decompressResponse(stream: Readable, headers: AxiosResponse['headers']) {

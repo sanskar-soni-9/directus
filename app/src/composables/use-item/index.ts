@@ -337,6 +337,9 @@ export function useItem<T extends Item>(
 				requestEndpoint(getEndpoint(collection.value), {
 					method: 'POST',
 					body: newItem,
+					params: {
+						copy: 1,
+					},
 				}),
 			);
 
