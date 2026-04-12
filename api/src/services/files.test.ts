@@ -880,4 +880,108 @@ describe('Service / Files', () => {
 			);
 		});
 	});
+
+	describe('copyOne', () => {
+		let service: FilesService;
+		let mockDriver: Driver;
+		let mockStorage: StorageManager;
+
+		const sample = {
+			id: 'new-file-id-456',
+			sourceId: 'source-file-id-123',
+		};
+
+		beforeEach(() => {
+			service = new FilesService({
+				knex: db,
+				schema: { collections: {}, relations: [] },
+			});
+
+			mockDriver = createMockDriver();
+			mockStorage = createMockStorage(mockDriver);
+			vi.mocked(getStorage).mockResolvedValue(mockStorage);
+
+			vi.spyOn(ItemsService.prototype, 'createOne').mockResolvedValue(sample.id);
+			vi.spyOn(ItemsService.prototype, 'updateOne').mockResolvedValue(sample.id);
+			vi.spyOn(ItemsService.prototype, 'deleteMany').mockResolvedValue([sample.id]);
+		});
+
+		test('should throw InvalidPayloadError when "filename_disk" is not provided', async () => {
+			await expect(service.copyOne({ title: 'Copy' })).rejects.toBeInstanceOf(InvalidPayloadError);
+			expect(ItemsService.prototype.createOne).not.toHaveBeenCalled();
+		});
+
+		test('should throw InvalidPayloadError when source file is not found', async () => {
+			tracker.on
+				.select(
+					'select "storage", "filesize", "type", "width", "height" from "directus_files" where "filename_disk" = ?',
+				)
+				.response(undefined);
+
+			await expect(service.copyOne({ filename_disk: 'nonexistent.jpg' })).rejects.toBeInstanceOf(InvalidPayloadError);
+			expect(ItemsService.prototype.createOne).not.toHaveBeenCalled();
+		});
+
+		test('creates new record with source metadata merged with caller data', async () => {
+			tracker.on
+				.select(
+					'select "storage", "filesize", "type", "width", "height" from "directus_files" where "filename_disk" = ?',
+				)
+				.response({ storage: 'local', filesize: 1024, type: 'image/jpeg', width: 800, height: 600 });
+
+			await service.copyOne({ filename_disk: `${sample.sourceId}.jpg`, title: 'My Copy' });
+
+			expect(ItemsService.prototype.createOne).toHaveBeenCalledWith(
+				expect.objectContaining({
+					storage: 'local',
+					type: 'image/jpeg',
+					title: 'My Copy',
+				}),
+				{},
+			);
+		});
+
+		test('should copy file on disk and update filename_disk on the new record', async () => {
+			tracker.on
+				.select(
+					'select "storage", "filesize", "type", "width", "height" from "directus_files" where "filename_disk" = ?',
+				)
+				.response({ storage: 'local', filesize: 1024, type: 'image/jpeg', width: 800, height: 600 });
+
+			await service.copyOne({ filename_disk: `${sample.sourceId}.jpg` });
+
+			expect(mockDriver.copy).toHaveBeenCalledWith(`${sample.sourceId}.jpg`, `${sample.id}.jpg`);
+
+			expect(ItemsService.prototype.updateOne).toHaveBeenCalledWith(sample.id, {
+				filename_disk: `${sample.id}.jpg`,
+			});
+		});
+
+		test('should delete new record and rethrow when disk copy fails', async () => {
+			tracker.on
+				.select(
+					'select "storage", "filesize", "type", "width", "height" from "directus_files" where "filename_disk" = ?',
+				)
+				.response({ storage: 'local', filesize: 1024, type: 'image/jpeg', width: 800, height: 600 });
+
+			vi.mocked(mockDriver.copy).mockRejectedValue(new Error('Disk full'));
+
+			await expect(service.copyOne({ filename_disk: `${sample.sourceId}.jpg` })).rejects.toThrow('Disk full');
+
+			expect(ItemsService.prototype.deleteMany).toHaveBeenCalledWith([sample.id]);
+			expect(ItemsService.prototype.updateOne).not.toHaveBeenCalled();
+		});
+
+		test('should infer extension from type when source filename has no extension', async () => {
+			tracker.on
+				.select(
+					'select "storage", "filesize", "type", "width", "height" from "directus_files" where "filename_disk" = ?',
+				)
+				.response({ storage: 'local', filesize: 512, type: 'image/png', width: 100, height: 100 });
+
+			await service.copyOne({ filename_disk: sample.sourceId });
+
+			expect(mockDriver.copy).toHaveBeenCalledWith(sample.sourceId, `${sample.id}.png`);
+		});
+	});
 });
